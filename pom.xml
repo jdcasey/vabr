@@ -9,7 +9,6 @@
   </parent>
   
   <artifactId>freeki-vertx-routing-api</artifactId>
-  <version>0.1-SNAPSHOT</version>
 
   <name>Freeki Routing API for Vert.X</name>
   
