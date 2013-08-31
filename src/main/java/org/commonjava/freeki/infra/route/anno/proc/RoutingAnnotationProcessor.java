@@ -134,8 +134,7 @@ public class RoutingAnnotationProcessor
         }
         catch ( CompilationFailedException | ClassNotFoundException | IOException e )
         {
-            throw new IllegalStateException( "Cannot load route template: " + TEMPLATE + ". Reason: " + e.getMessage(),
-                                             e );
+            throw new IllegalStateException( "Cannot load route template: " + TEMPLATE + ". Reason: " + e.getMessage(), e );
         }
 
         System.out.printf( "Package: %s\n", pkg );
@@ -159,9 +158,7 @@ public class RoutingAnnotationProcessor
         catch ( final IOException e )
         {
             processingEnv.getMessager()
-                         .printMessage( Kind.ERROR,
-                                        "While generating sources for routes class: '" + clsName + "', error: "
-                                            + e.getMessage() );
+                         .printMessage( Kind.ERROR, "While generating sources for routes class: '" + clsName + "', error: " + e.getMessage() );
         }
         finally
         {
@@ -182,7 +179,7 @@ public class RoutingAnnotationProcessor
         Writer svcWriter = null;
         try
         {
-            final FileObject file = filer.createResource( StandardLocation.CLASS_OUTPUT, "", resName, (Element[]) null );
+            final FileObject file = filer.createResource( StandardLocation.SOURCE_OUTPUT, "", resName, (Element[]) null );
             System.out.printf( "Generating routes class service entry for: %s in: %s\n", clsName, file.toUri() );
             svcWriter = file.openWriter();
             svcWriter.write( clsName );
@@ -191,8 +188,7 @@ public class RoutingAnnotationProcessor
         {
             processingEnv.getMessager()
                          .printMessage( Kind.ERROR,
-                                        "While generating service configuration for routes class: '" + resName
-                                            + "', error: " + e.getMessage() );
+                                        "While generating service configuration for routes class: '" + resName + "', error: " + e.getMessage() );
         }
         finally
         {
