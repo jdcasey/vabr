@@ -126,6 +126,7 @@ public class ApplicationRouter
                 final String v = ctx.matcher.group( i );
                 if ( v != null )
                 {
+                    logger.info( "PARAM %s = %s", param, v );
                     params.put( param, v );
                 }
                 i++;
@@ -139,6 +140,7 @@ public class ApplicationRouter
                 final String v = ctx.matcher.group( i + 1 );
                 if ( v != null )
                 {
+                    logger.info( "PARAM param%s = %s", i, v );
                     params.put( "param" + i, v );
                 }
             }
@@ -238,8 +240,7 @@ public class ApplicationRouter
 
             if ( groups.contains( group ) )
             {
-                throw new IllegalArgumentException( "Cannot use identifier " + group
-                    + " more than once in pattern string" );
+                throw new IllegalArgumentException( "Cannot use identifier " + group + " more than once in pattern string" );
             }
 
             m.appendReplacement( sb, pattern );
