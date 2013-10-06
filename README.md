@@ -1,4 +1,4 @@
-# Vert.x Annotation-Based Routing (for the Java API)
+# Vert.x Annotation-Based Routing
 
 This is a relatively simple API and Java annotation processor that generates a Java source file containing routing object instances. Each instance corresponds to a different route, expressed using a path pattern (which may contain regular expressions) and a couple of other options. These instances basically delegate the call to the method that declared them.
 
