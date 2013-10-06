@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.freeki.infra.route;
+package org.commonjava.vertx.vabr;
 
 import java.util.ArrayList;
 import java.util.Collection;

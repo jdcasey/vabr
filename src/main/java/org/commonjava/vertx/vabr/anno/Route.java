@@ -14,9 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.freeki.infra.route;
+package org.commonjava.vertx.vabr.anno;
 
-public interface RouteHandler
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.commonjava.vertx.vabr.Method;
+
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface Route
 {
+
+    String path();
+
+    Method method();
+
+    String contentType() default "";
 
 }

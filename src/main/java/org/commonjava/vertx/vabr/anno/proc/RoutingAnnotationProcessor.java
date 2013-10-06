@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.freeki.infra.route.anno.proc;
+package org.commonjava.vertx.vabr.anno.proc;
 
 import groovy.lang.Writable;
 import groovy.text.GStringTemplateEngine;
@@ -43,9 +43,9 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
 import org.codehaus.groovy.control.CompilationFailedException;
-import org.commonjava.freeki.infra.route.RouteCollection;
-import org.commonjava.freeki.infra.route.anno.Route;
-import org.commonjava.freeki.infra.route.anno.Routes;
+import org.commonjava.vertx.vabr.RouteCollection;
+import org.commonjava.vertx.vabr.anno.Route;
+import org.commonjava.vertx.vabr.anno.Routes;
 
 /* @formatter:off */
 @SupportedAnnotationTypes( { 

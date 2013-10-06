@@ -11,10 +11,10 @@ package org.foo.myapp;
 
 import org.commonjava.freeki.data.TemplateController;
 import org.commonjava.freeki.data.TemplateException;
-import org.commonjava.freeki.infra.route.Method;
-import org.commonjava.freeki.infra.route.RouteHandler;
-import org.commonjava.freeki.infra.route.anno.Route;
-import org.commonjava.freeki.infra.route.anno.Routes;
+import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.RouteHandler;
+import org.commonjava.vertx.vabr.anno.Route;
+import org.commonjava.vertx.vabr.anno.Routes;
 
 public class TemplateContentHandler
     implements RouteHandler
@@ -96,7 +96,7 @@ The Apache Maven POM configuration will look similar to this:
           <source>1.7</source>
           <target>1.7</target>
           <annotationProcessors>
-            <annotationProcessor>org.commonjava.freeki.infra.route.anno.proc.RoutingAnnotationProcessor</annotationProcessor>
+            <annotationProcessor>org.commonjava.vertx.vabr.anno.proc.RoutingAnnotationProcessor</annotationProcessor>
           </annotationProcessors>
         </configuration>
       </plugin>
@@ -113,11 +113,13 @@ The annotation processor will generate the following Java:
 ```java
 package org.foo.myapp;
 
-import org.commonjava.freeki.infra.route.ApplicationRouter;
-import org.commonjava.freeki.infra.route.RouteBinding;
-import org.commonjava.freeki.infra.route.Method;
-import org.commonjava.freeki.infra.route.AbstractRouteCollection;
+import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.RouteBinding;
+import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.AbstractRouteCollection;
+
 import org.vertx.java.core.http.HttpServerRequest;
+
 import org.commonjava.util.logging.Logger;
 
 public final class Routes
@@ -136,7 +138,7 @@ public final class Routes
                 org.foo.myapp.TemplateContentHandler handler = router.getResourceInstance( org.foo.myapp.TemplateContentHandler.class );
                 if ( handler != null )
                 {
-                    logger.info( "Handling via: %s", handler );
+                    logger.debug( "Handling via: %s", handler );
                     handler.get( req );
                 }
                 else

@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.freeki.infra.route.anno.proc;
+package org.commonjava.vertx.vabr.anno.proc;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
-import org.commonjava.freeki.infra.route.Method;
-import org.commonjava.freeki.infra.route.anno.Route;
+import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.anno.Route;
 
 public final class RoutingTemplateInfo
 {

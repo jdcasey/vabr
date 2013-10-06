@@ -14,17 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.freeki.infra.route.anno;
+package org.commonjava.vertx.vabr;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-
-@Target( { ElementType.METHOD } )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface Routes
+public enum Method
 {
-    Route[] value();
+    GET,
+
+    PUT,
+
+    POST,
+
+    DELETE,
+
+    OPTIONS,
+
+    HEAD,
+
+    TRACE,
+
+    CONNECT,
+
+    PATCH;
+
 }
