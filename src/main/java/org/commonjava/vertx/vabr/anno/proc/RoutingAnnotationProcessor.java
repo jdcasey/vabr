@@ -54,8 +54,8 @@ import org.commonjava.vertx.vabr.anno.Routes;
     "javax.ws.rs.PathParam", 
     "javax.ws.rs.QueryParam",
     "javax.ws.rs.core.Context",
-    "org.commonjava.freeki.infra.route.anno.Routes",
-    "org.commonjava.freeki.infra.route.anno.Route"
+    "org.commonjava.vertx.vabr.anno.Routes",
+    "org.commonjava.vertx.vabr.anno.Route"
 } )
 /* @formatter:on */
 @SupportedSourceVersion( SourceVersion.RELEASE_7 )
