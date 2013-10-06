@@ -22,7 +22,6 @@ import groovy.text.Template;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -49,11 +48,6 @@ import org.commonjava.vertx.vabr.anno.Routes;
 
 /* @formatter:off */
 @SupportedAnnotationTypes( { 
-    "javax.ws.rs.CookieParam", 
-    "javax.ws.rs.HeaderParam",
-    "javax.ws.rs.PathParam", 
-    "javax.ws.rs.QueryParam",
-    "javax.ws.rs.core.Context",
     "org.commonjava.vertx.vabr.anno.Routes",
     "org.commonjava.vertx.vabr.anno.Route"
 } )
@@ -63,7 +57,9 @@ public class RoutingAnnotationProcessor
     extends AbstractProcessor
 {
 
-    public static final String TEMPLATE = "groovy/routes.groovy";
+    public static final String TEMPLATE_PKG = "groovy";
+
+    public static final String TEMPLATE = "routes.groovy";
 
     @Override
     public boolean process( final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv )
@@ -135,22 +131,23 @@ public class RoutingAnnotationProcessor
     private void generateOutput( final String pkg, final Set<RoutingTemplateInfo> infos, final RoundEnvironment roundEnv )
     {
         final GStringTemplateEngine engine = new GStringTemplateEngine();
-        final URL resource = Thread.currentThread()
-                                   .getContextClassLoader()
-                                   .getResource( TEMPLATE );
-        if ( resource == null )
-        {
-            throw new IllegalStateException( "Cannot find route template: " + TEMPLATE );
-        }
-
         Template template;
         try
         {
-            template = engine.createTemplate( resource );
+            final FileObject resource = processingEnv.getFiler()
+                                                     .getResource( StandardLocation.CLASS_PATH, TEMPLATE_PKG, TEMPLATE );
+
+            if ( resource == null )
+            {
+                throw new IllegalStateException( "Cannot find route template: " + TEMPLATE );
+            }
+
+            template = engine.createTemplate( resource.toUri()
+                                                      .toURL() );
         }
         catch ( CompilationFailedException | ClassNotFoundException | IOException e )
         {
-            throw new IllegalStateException( "Cannot load route template: " + TEMPLATE + ". Reason: " + e.getMessage(), e );
+            throw new IllegalStateException( "Cannot load route template: " + TEMPLATE_PKG + "/" + TEMPLATE + ". Reason: " + e.getMessage(), e );
         }
 
         System.out.printf( "Package: %s\n", pkg );
