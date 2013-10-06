@@ -64,7 +64,7 @@ The Apache Maven POM configuration will look similar to this:
 
 ```xml
 <properties>
-  <vabrVersion>1.0-SNAPSHOT</vabrVersion>
+  <vabrVersion>1.1</vabrVersion>
 </properties>
 
 <dependencies>
@@ -72,8 +72,14 @@ The Apache Maven POM configuration will look similar to this:
 
   <dependency>
     <groupId>org.commonjava.vertx</groupId>
-    <artifactId>vabr</artifactId>
+    <artifactId>vabr-api</artifactId>
     <version>${vabrVersion}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.commonjava.vertx</groupId>
+    <artifactId>vabr-processor</artifactId>
+    <version>${vabrVersion}</version>
+    <scope>provided</scope>
   </dependency>
 </dependencies>
 
@@ -85,13 +91,6 @@ The Apache Maven POM configuration will look similar to this:
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
-        <dependencies>
-          <dependency>
-            <groupId>org.commonjava.vertx</groupId>
-            <artifactId>vabr</artifactId>
-            <version>${vabrVersion}</version>
-          </dependency>
-        </dependencies>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
