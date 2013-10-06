@@ -2,6 +2,8 @@
 
 This is a relatively simple API and Java annotation processor that generates a Java source file containing routing object instances. Each instance corresponds to a different route, expressed using a path pattern (which may contain regular expressions) and a couple of other options. These instances basically delegate the call to the method that declared them.
 
+**NOTE:** To see this API in action, check out the [Freeki](https://github.com/jdcasey/freeki) project.
+
 ## Step 1: Annotate
 
 So, if you have a Java class that looks like this:
@@ -9,8 +11,6 @@ So, if you have a Java class that looks like this:
 ```java
 package org.foo.myapp;
 
-import org.commonjava.freeki.data.TemplateController;
-import org.commonjava.freeki.data.TemplateException;
 import org.commonjava.vertx.vabr.Method;
 import org.commonjava.vertx.vabr.RouteHandler;
 import org.commonjava.vertx.vabr.anno.Route;
