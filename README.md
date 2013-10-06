@@ -6,8 +6,7 @@ This is a relatively simple API and Java annotation processor that generates a J
 
 So, if you have a Java class that looks like this:
 
-{{{
-  
+```java
     package org.foo.myapp;
     
     import org.commonjava.freeki.data.TemplateController;
@@ -57,14 +56,13 @@ So, if you have a Java class that looks like this:
             this.serializer = serializer;
         }
     }
-}}}
+```
 
 ## Step 2: Generate
 
 The Apache Maven POM configuration will look similar to this:
 
-{{{xml
-    
+```xml
     <properties>
       <vabrVersion>1.0-SNAPSHOT</vabrVersion>
     </properties>
@@ -108,12 +106,11 @@ The Apache Maven POM configuration will look similar to this:
       </pluginManagement>
       [...]
     </build>
-}}}
+```
 
 The annotation processor will generate the following Java:
 
-{{{
-    
+```java
     package org.foo.myapp;
     
     import org.commonjava.freeki.infra.route.ApplicationRouter;
@@ -150,14 +147,13 @@ The annotation processor will generate the following Java:
             } );
         }
     }
-}}}
+```
 
 ## Step 3: Launch!
 
 To initialize the controller that knows how to handle these generated route bindings, use something like the following:
 
-{{{
-    
+```java
     final Set<RouteHandler> handlers = Collections.singleton( new TemplateContentHandler( new TemplateController( store, config ), serializer ) );
     
     final ServiceLoader<RouteCollection> collections = ServiceLoader.load( RouteCollection.class );
@@ -167,4 +163,4 @@ To initialize the controller that knows how to handle these generated route bind
     vertx.createHttpServer()
          .requestHandler( router )
          .listen( 8080, "127.0.0.1" );
-}}}
+```
