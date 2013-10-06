@@ -16,7 +16,7 @@ import org.commonjava.freeki.infra.route.RouteHandler;
 import org.commonjava.freeki.infra.route.anno.Route;
 import org.commonjava.freeki.infra.route.anno.Routes;
 
-public class MyContentHandler
+public class TemplateContentHandler
     implements RouteHandler
 {
 
