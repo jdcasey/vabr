@@ -18,6 +18,7 @@ package org.commonjava.vertx.vabr;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +56,27 @@ public class ApplicationRouter
 
     private Handler<HttpServerRequest> noMatchHandler;
 
+    private final String prefix;
+
     public ApplicationRouter()
     {
+        this.prefix = null;
     }
 
     public ApplicationRouter( final Collection<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
     {
+        this.prefix = null;
+        bind( routes, routeCollections );
+    }
+
+    public ApplicationRouter( final String prefix )
+    {
+        this.prefix = prefix;
+    }
+
+    public ApplicationRouter( final String prefix, final Collection<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    {
+        this.prefix = prefix;
         bind( routes, routeCollections );
     }
 
@@ -95,6 +111,15 @@ public class ApplicationRouter
             final Method method = Method.valueOf( request.method() );
 
             //            logger.info( "REQUEST>>> %s %s\n", method, request.path() );
+
+            String path = request.path();
+            if ( prefix == null || path.startsWith( prefix ) )
+            {
+                if ( prefix != null )
+                {
+                    path = path.substring( prefix.length() - 1 );
+                }
+            }
 
             final BindingContext ctx = findBinding( method, request.path() );
             if ( ctx != null )
@@ -270,9 +295,12 @@ public class ApplicationRouter
 
         final PatternBinding binding = new PatternBinding( Pattern.compile( regex ), groups, handler );
         bindings.add( binding );
+
+        Collections.sort( bindings );
     }
 
     private static class PatternBinding
+        implements Comparable<PatternBinding>
     {
         final Pattern pattern;
 
@@ -291,6 +319,13 @@ public class ApplicationRouter
         public String toString()
         {
             return String.format( "Binding [pattern: %s, params: %s, handler: %s]", pattern, paramNames, handler );
+        }
+
+        @Override
+        public int compareTo( final PatternBinding other )
+        {
+            // this is intentionally backward, since higher priority should sort FIRST.
+            return new Integer( other.handler.getPriority() ).compareTo( handler.getPriority() );
         }
     }
 }

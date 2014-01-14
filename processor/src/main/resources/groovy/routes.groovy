@@ -17,7 +17,7 @@ public final class Routes
 
     public Routes()
     {<% routes.each { %>
-        bind( new RouteBinding( "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}" )
+        bind( new RouteBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}" )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest req )
                 throws Exception

@@ -29,11 +29,19 @@ public abstract class RouteBinding
 
     private final String contentType;
 
-    protected RouteBinding( final String path, final Method method, final String contentType )
+    private final int priority;
+
+    protected RouteBinding( final int priority, final String path, final Method method, final String contentType )
     {
+        this.priority = priority;
         this.path = path;
         this.method = method;
         this.contentType = contentType.length() < 1 ? null : contentType;
+    }
+
+    public int getPriority()
+    {
+        return priority;
     }
 
     public String getContentType()

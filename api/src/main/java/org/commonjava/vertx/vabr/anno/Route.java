@@ -28,6 +28,8 @@ import org.commonjava.vertx.vabr.Method;
 public @interface Route
 {
 
+    int priority() default 50;
+
     String path();
 
     Method method();
