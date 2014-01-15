@@ -33,30 +33,17 @@ public class ApplicationRouter
     implements Handler<HttpServerRequest>
 {
 
-    static class BindingContext
-    {
-        private final Matcher matcher;
-
-        private final PatternBinding binding;
-
-        private BindingContext( final Matcher matcher, final PatternBinding binding )
-        {
-            this.matcher = matcher;
-            this.binding = binding;
-        }
-    }
-
     private static final String PATH_SEG_PATTERN = "([^\\/]+)";
 
-    private final Logger logger = new Logger( getClass() );
+    protected final Logger logger = new Logger( getClass() );
 
-    private final Map<Method, List<PatternBinding>> bindings = new HashMap<>();
+    private Map<Method, List<PatternBinding>> bindings = new HashMap<>();
 
-    private final Map<String, RouteHandler> routes = new HashMap<>();
+    private Map<String, RouteHandler> routes = new HashMap<>();
 
     private Handler<HttpServerRequest> noMatchHandler;
 
-    private final String prefix;
+    private String prefix;
 
     public ApplicationRouter()
     {
@@ -80,7 +67,7 @@ public class ApplicationRouter
         bind( routes, routeCollections );
     }
 
-    private void bind( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    protected void bind( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
     {
         for ( final RouteHandler route : routes )
         {
@@ -243,7 +230,7 @@ public class ApplicationRouter
         noMatchHandler = handler;
     }
 
-    private void addPattern( final String input, final RouteBinding handler, final List<PatternBinding> bindings )
+    protected void addPattern( final String input, final RouteBinding handler, final List<PatternBinding> bindings )
     {
         // input is /:name/:path=(.+)/:page
         // route pattern is: /([^\\/]+)/(.+)/([^\\/]+)
@@ -299,7 +286,7 @@ public class ApplicationRouter
         Collections.sort( bindings );
     }
 
-    private static class PatternBinding
+    protected static class PatternBinding
         implements Comparable<PatternBinding>
     {
         final Pattern pattern;
@@ -328,4 +315,58 @@ public class ApplicationRouter
             return new Integer( other.handler.getPriority() ).compareTo( handler.getPriority() );
         }
     }
+
+    protected static class BindingContext
+    {
+        private final Matcher matcher;
+
+        private final PatternBinding binding;
+
+        private BindingContext( final Matcher matcher, final PatternBinding binding )
+        {
+            this.matcher = matcher;
+            this.binding = binding;
+        }
+    }
+
+    public Map<Method, List<PatternBinding>> getBindings()
+    {
+        return bindings;
+    }
+
+    public Map<String, RouteHandler> getRoutes()
+    {
+        return routes;
+    }
+
+    public Handler<HttpServerRequest> getNoMatchHandler()
+    {
+        return noMatchHandler;
+    }
+
+    public String getPrefix()
+    {
+        return prefix;
+    }
+
+    public void setNoMatchHandler( final Handler<HttpServerRequest> noMatchHandler )
+    {
+        this.noMatchHandler = noMatchHandler;
+    }
+
+    public void setPrefix( final String prefix )
+    {
+        this.prefix = prefix;
+    }
+
+    protected void setBindings( final Map<Method, List<PatternBinding>> bindings )
+    {
+        this.bindings = bindings;
+    }
+
+    protected void setRoutes( final Map<String, RouteHandler> routes )
+    {
+        this.routes = routes;
+    }
+
 }
