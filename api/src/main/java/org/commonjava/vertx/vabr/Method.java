@@ -34,6 +34,8 @@ public enum Method
 
     CONNECT,
 
-    PATCH;
+    PATCH,
+
+    ANY;
 
 }

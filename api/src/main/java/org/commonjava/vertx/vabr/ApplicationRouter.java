@@ -109,6 +109,12 @@ public class ApplicationRouter
             }
 
             final BindingContext ctx = findBinding( method, request.path() );
+
+            if ( ctx == null )
+            {
+                findBinding( Method.ANY, request.path() );
+            }
+
             if ( ctx != null )
             {
                 logger.info( "MATCH: %s\n", ctx.binding.handler );
