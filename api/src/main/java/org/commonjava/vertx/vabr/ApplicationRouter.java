@@ -17,7 +17,6 @@
 package org.commonjava.vertx.vabr;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +26,16 @@ import java.util.regex.Pattern;
 
 import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.anno.PathPrefix;
+import org.commonjava.vertx.vabr.filter.FilterBinding;
+import org.commonjava.vertx.vabr.filter.FilterCollection;
+import org.commonjava.vertx.vabr.filter.FilterHandler;
+import org.commonjava.vertx.vabr.helper.BindingContext;
+import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
+import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
+import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
+import org.commonjava.vertx.vabr.route.RouteBinding;
+import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.route.RouteHandler;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -38,9 +47,13 @@ public class ApplicationRouter
 
     protected final Logger logger = new Logger( getClass() );
 
-    private Map<Method, List<PatternBinding>> bindings = new HashMap<>();
+    private Map<Method, List<PatternRouteBinding>> routeBindings = new HashMap<>();
+
+    private final Map<Method, List<PatternFilterBinding>> filterBindings = new HashMap<>();
 
     private Map<String, RouteHandler> routes = new HashMap<>();
+
+    private final Map<String, FilterHandler> filters = new HashMap<>();
 
     private Handler<HttpServerRequest> noMatchHandler;
 
@@ -51,10 +64,10 @@ public class ApplicationRouter
         this.prefix = null;
     }
 
-    public ApplicationRouter( final Collection<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public ApplicationRouter( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = null;
-        bind( routes, routeCollections );
+        bindRoutes( routes, routeCollections );
     }
 
     public ApplicationRouter( final String prefix )
@@ -62,13 +75,30 @@ public class ApplicationRouter
         this.prefix = prefix;
     }
 
-    public ApplicationRouter( final String prefix, final Collection<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public ApplicationRouter( final String prefix, final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = prefix;
-        bind( routes, routeCollections );
+        bindRoutes( routes, routeCollections );
     }
 
-    protected void bind( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public void bindFilters( final Iterable<FilterHandler> filters, final Iterable<FilterCollection> filterCollections )
+    {
+        for ( final FilterHandler filter : filters )
+        {
+            this.filters.put( filter.getClass()
+                                    .getName(), filter );
+        }
+
+        for ( final FilterCollection fc : filterCollections )
+        {
+            for ( final FilterBinding fb : fc )
+            {
+                bind( fb );
+            }
+        }
+    }
+
+    public void bindRoutes( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
     {
         for ( final RouteHandler route : routes )
         {
@@ -118,10 +148,13 @@ public class ApplicationRouter
 
             if ( ctx != null )
             {
-                logger.info( "MATCH: %s\n", ctx.binding.handler );
+                final RouteBinding handler = ctx.getRouteBinding()
+                                                .getHandler();
+                // FIXME Wrap this in an executor that knows about filters AND the fundamental route...
+                logger.info( "MATCH: %s\n", handler );
                 parseParams( ctx, request );
 
-                ctx.binding.handler.handle( this, request );
+                new ExecutionChainHandler( this, ctx, request ).execute();
                 return;
             }
 
@@ -151,13 +184,19 @@ public class ApplicationRouter
 
     protected void parseParams( final BindingContext ctx, final HttpServerRequest request )
     {
-        final Map<String, String> params = new HashMap<>( ctx.matcher.groupCount() );
+        final Matcher matcher = ctx.getMatcher();
+
+        final Map<String, String> params = new HashMap<>( matcher.groupCount() );
 
         final String fullPath = request.path();
 
-        final PathPrefix pp = ctx.binding.handler.getMethod()
-                                                 .getDeclaringClass()
-                                                 .getAnnotation( PathPrefix.class );
+        final PatternRouteBinding routeBinding = ctx.getRouteBinding();
+        final List<String> paramNames = routeBinding.getParamNames();
+        final RouteBinding handler = routeBinding.getHandler();
+
+        final PathPrefix pp = handler.getMethod()
+                                     .getDeclaringClass()
+                                     .getAnnotation( PathPrefix.class );
         if ( pp != null )
         {
             final String pathPrefix = pp.value();
@@ -170,15 +209,15 @@ public class ApplicationRouter
             }
         }
 
-        if ( ctx.binding.paramNames != null )
+        if ( paramNames != null )
         {
             // Named params
             int i = 1;
 
-            if ( !ctx.binding.paramNames.isEmpty() )
+            if ( !paramNames.isEmpty() )
             {
                 // We should absolutely be able to figure this out without being defensive.
-                final int firstIdx = ctx.matcher.start( i );
+                final int firstIdx = matcher.start( i );
                 String basePath = fullPath.substring( 0, firstIdx );
 
                 if ( basePath.endsWith( "/" ) )
@@ -189,9 +228,9 @@ public class ApplicationRouter
                 params.put( BuiltInParam._routeBase.key(), basePath );
             }
 
-            for ( final String param : ctx.binding.paramNames )
+            for ( final String param : paramNames )
             {
-                final String v = ctx.matcher.group( i );
+                final String v = matcher.group( i );
                 if ( v != null )
                 {
                     logger.info( "PARAM %s = %s", param, v );
@@ -203,9 +242,9 @@ public class ApplicationRouter
         else
         {
             // Un-named params
-            for ( int i = 0; i < ctx.matcher.groupCount(); i++ )
+            for ( int i = 0; i < matcher.groupCount(); i++ )
             {
-                final String v = ctx.matcher.group( i + 1 );
+                final String v = matcher.group( i + 1 );
                 if ( v != null )
                 {
                     logger.info( "PARAM param%s = %s", i, v );
@@ -239,16 +278,31 @@ public class ApplicationRouter
 
     protected BindingContext findBinding( final Method method, final String path )
     {
-        final List<PatternBinding> bindings = this.bindings.get( method );
-        //        logger.info( "Available bindings:\n  %s\n", join( bindings, "\n  " ) );
-        if ( bindings != null )
+        final List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
+
+        PatternFilterBinding filterBinding = null;
+        for ( final PatternFilterBinding binding : allFilterBindings )
         {
-            for ( final PatternBinding binding : bindings )
+            if ( binding.getPattern()
+                        .matcher( path )
+                        .matches() )
             {
-                final Matcher m = binding.pattern.matcher( path );
+                filterBinding = binding;
+                break;
+            }
+        }
+
+        final List<PatternRouteBinding> routeBindings = this.routeBindings.get( method );
+        //        logger.info( "Available bindings:\n  %s\n", join( bindings, "\n  " ) );
+        if ( routeBindings != null )
+        {
+            for ( final PatternRouteBinding binding : routeBindings )
+            {
+                final Matcher m = binding.getPattern()
+                                         .matcher( path );
                 if ( m.matches() )
                 {
-                    return new BindingContext( m, binding );
+                    return new BindingContext( m, binding, filterBinding );
                 }
             }
         }
@@ -266,16 +320,60 @@ public class ApplicationRouter
         final Method method = handler.getMethod();
         final String path = handler.getPath();
 
-        // FIXME: Sort these to push the most specific paths to the top.
-        List<PatternBinding> b = bindings.get( method );
+        List<PatternRouteBinding> b = routeBindings.get( method );
         if ( b == null )
         {
             b = new ArrayList<>();
-            bindings.put( method, b );
+            routeBindings.put( method, b );
         }
 
         logger.info( "ADD Method: %s, Pattern: %s, Route: %s\n", method, path, handler );
         addPattern( path, handler, b );
+    }
+
+    /**
+     * Specify a filter handler that will be used to wrap route executions
+     * @param pattern The simple pattern
+     * @param handler The handler to call
+     */
+    public void bind( final FilterBinding handler )
+    {
+        final Method method = handler.getMethod();
+        final String path = handler.getPath();
+
+        List<PatternFilterBinding> b = filterBindings.get( method );
+        if ( b == null )
+        {
+            b = new ArrayList<>();
+            filterBindings.put( method, b );
+        }
+
+        logger.info( "ADD Method: %s, Pattern: %s, Filter: %s\n", method, path, handler );
+        List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
+        if ( allFilterBindings == null )
+        {
+            allFilterBindings = new ArrayList<>();
+            this.filterBindings.put( method, allFilterBindings );
+        }
+
+        boolean found = false;
+        for ( final PatternFilterBinding binding : allFilterBindings )
+        {
+            if ( binding.getPattern()
+                        .pattern()
+                        .equals( handler.getPath() ) )
+            {
+                binding.addFilter( handler );
+                found = true;
+                break;
+            }
+        }
+
+        if ( !found )
+        {
+            final PatternFilterBinding binding = new PatternFilterBinding( Pattern.compile( handler.getPath() ), handler );
+            allFilterBindings.add( binding );
+        }
     }
 
     /**
@@ -288,7 +386,7 @@ public class ApplicationRouter
         noMatchHandler = handler;
     }
 
-    protected void addPattern( final String input, final RouteBinding handler, final List<PatternBinding> bindings )
+    protected void addPattern( final String input, final RouteBinding handler, final List<PatternRouteBinding> bindings )
     {
         // input is /:name/:path=(.+)/:page
         // route pattern is: /([^\\/]+)/(.+)/([^\\/]+)
@@ -338,58 +436,20 @@ public class ApplicationRouter
 
         //        logger.info( "BIND regex: %s, groups: %s, route: %s\n", regex, groups, handler );
 
-        final PatternBinding binding = new PatternBinding( Pattern.compile( regex ), groups, handler );
+        final PatternRouteBinding binding = new PatternRouteBinding( Pattern.compile( regex ), groups, handler );
         bindings.add( binding );
 
         Collections.sort( bindings );
     }
 
-    protected static class PatternBinding
-        implements Comparable<PatternBinding>
+    public Map<Method, List<PatternRouteBinding>> getRouteBindings()
     {
-        final Pattern pattern;
-
-        final RouteBinding handler;
-
-        final List<String> paramNames;
-
-        private PatternBinding( final Pattern pattern, final List<String> paramNames, final RouteBinding handler )
-        {
-            this.pattern = pattern;
-            this.paramNames = paramNames;
-            this.handler = handler;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "Binding [pattern: %s, params: %s, handler: %s]", pattern, paramNames, handler );
-        }
-
-        @Override
-        public int compareTo( final PatternBinding other )
-        {
-            // this is intentionally backward, since higher priority should sort FIRST.
-            return new Integer( other.handler.getPriority() ).compareTo( handler.getPriority() );
-        }
+        return routeBindings;
     }
 
-    protected static class BindingContext
+    public Map<Method, List<PatternFilterBinding>> getFilterBindings()
     {
-        private final Matcher matcher;
-
-        private final PatternBinding binding;
-
-        private BindingContext( final Matcher matcher, final PatternBinding binding )
-        {
-            this.matcher = matcher;
-            this.binding = binding;
-        }
-    }
-
-    public Map<Method, List<PatternBinding>> getBindings()
-    {
-        return bindings;
+        return filterBindings;
     }
 
     public Map<String, RouteHandler> getRoutes()
@@ -417,9 +477,9 @@ public class ApplicationRouter
         this.prefix = prefix;
     }
 
-    protected void setBindings( final Map<Method, List<PatternBinding>> bindings )
+    protected void setBindings( final Map<Method, List<PatternRouteBinding>> bindings )
     {
-        this.bindings = bindings;
+        this.routeBindings = bindings;
     }
 
     protected void setRoutes( final Map<String, RouteHandler> routes )

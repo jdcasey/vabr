@@ -14,9 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.vertx.vabr;
+package org.commonjava.vertx.vabr.route;
 
-public interface RouteHandler
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+public abstract class AbstractRouteCollection
+    implements RouteCollection
 {
+
+    private final Set<RouteBinding> routes = new HashSet<>();
+
+    protected void bind( final RouteBinding route )
+    {
+        routes.add( route );
+    }
+
+    @Override
+    public final Set<RouteBinding> getRoutes()
+    {
+        return routes;
+    }
+
+    @Override
+    public Iterator<RouteBinding> iterator()
+    {
+        return routes.iterator();
+    }
 
 }

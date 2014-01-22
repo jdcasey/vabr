@@ -14,15 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.vertx.vabr;
+package org.commonjava.vertx.vabr.filter;
 
 import java.util.Set;
 
-
-public interface RouteCollection
-    extends Iterable<RouteBinding>
+public interface FilterCollection
+    extends Iterable<FilterBinding>
 {
 
-    Set<RouteBinding> getRoutes();
+    Set<FilterBinding> getFilters();
 
 }

@@ -1,0 +1,19 @@
+package org.commonjava.vertx.vabr.anno;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.commonjava.vertx.vabr.Method;
+
+@Target( { ElementType.METHOD } )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface FilterRoute
+{
+    String value() default "";
+
+    String path() default "";
+
+    Method method() default Method.GET;
+}

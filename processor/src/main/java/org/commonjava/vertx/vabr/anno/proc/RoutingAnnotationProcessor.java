@@ -42,13 +42,18 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
 import org.codehaus.groovy.control.CompilationFailedException;
-import org.commonjava.vertx.vabr.RouteCollection;
+import org.commonjava.vertx.vabr.anno.FilterRoute;
+import org.commonjava.vertx.vabr.anno.FilterRoutes;
 import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.commonjava.vertx.vabr.anno.Route;
 import org.commonjava.vertx.vabr.anno.Routes;
+import org.commonjava.vertx.vabr.filter.FilterCollection;
+import org.commonjava.vertx.vabr.route.RouteCollection;
 
 /* @formatter:off */
 @SupportedAnnotationTypes( { 
+    "org.commonjava.vertx.vabr.anno.FilterRoutes",
+    "org.commonjava.vertx.vabr.anno.FilterRoute",
     "org.commonjava.vertx.vabr.anno.PathPrefix",
     "org.commonjava.vertx.vabr.anno.Routes",
     "org.commonjava.vertx.vabr.anno.Route"
@@ -61,7 +66,13 @@ public class RoutingAnnotationProcessor
 
     public static final String TEMPLATE_PKG = "groovy";
 
-    public static final String TEMPLATE = "routes.groovy";
+    public static final String ROUTE_TEMPLATE = "routes.groovy";
+
+    public static final String FILTER_TEMPLATE = "filters.groovy";
+
+    final GStringTemplateEngine engine = new GStringTemplateEngine();
+
+    private String pkg = null;
 
     @Override
     public boolean process( final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv )
@@ -73,9 +84,27 @@ public class RoutingAnnotationProcessor
 
         System.out.println( "Starting Route Processing..." );
 
-        final Set<RoutingTemplateInfo> infos = new HashSet<>();
+        final Set<RoutingTemplateInfo> routingTemplates = processRoutes( roundEnv );
+        final Set<FilteringTemplateInfo> filteringTemplates = processFilters( roundEnv );
 
-        String pkg = null;
+        System.out.printf( "Using package: %s\n", pkg );
+
+        if ( !routingTemplates.isEmpty() )
+        {
+            generateOutput( pkg, "Routes", ROUTE_TEMPLATE, RouteCollection.class, routingTemplates, roundEnv );
+        }
+
+        if ( !filteringTemplates.isEmpty() )
+        {
+            generateOutput( pkg, "Filters", FILTER_TEMPLATE, FilterCollection.class, filteringTemplates, roundEnv );
+        }
+
+        return true;
+    }
+
+    private Set<RoutingTemplateInfo> processRoutes( final RoundEnvironment roundEnv )
+    {
+        final Set<RoutingTemplateInfo> routingTemplates = new HashSet<>();
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( Routes.class ) )
         {
@@ -90,7 +119,7 @@ public class RoutingAnnotationProcessor
             {
                 for ( final Route route : routes.value() )
                 {
-                    infos.add( new RoutingTemplateInfo( elem, route, prefix ) );
+                    routingTemplates.add( new RoutingTemplateInfo( elem, route, prefix ) );
                 }
             }
         }
@@ -100,17 +129,45 @@ public class RoutingAnnotationProcessor
             final PathPrefix prefix = findPathPrefix( elem );
             final Route route = elem.getAnnotation( Route.class );
 
-            infos.add( new RoutingTemplateInfo( elem, route, prefix ) );
+            routingTemplates.add( new RoutingTemplateInfo( elem, route, prefix ) );
             pkg = selectShortestPackage( pkg, elem );
         }
 
-        if ( !infos.isEmpty() )
+        return routingTemplates;
+    }
+
+    private Set<FilteringTemplateInfo> processFilters( final RoundEnvironment roundEnv )
+    {
+        final Set<FilteringTemplateInfo> filteringTemplates = new HashSet<>();
+
+        for ( final Element elem : roundEnv.getElementsAnnotatedWith( FilterRoutes.class ) )
         {
-            System.out.printf( "Using package: %s\n", pkg );
-            generateOutput( pkg, infos, roundEnv );
+            System.out.printf( "Processing: %s\n", elem );
+
+            final PathPrefix prefix = findPathPrefix( elem );
+
+            pkg = selectShortestPackage( pkg, elem );
+
+            final FilterRoutes filters = elem.getAnnotation( FilterRoutes.class );
+            if ( filters != null )
+            {
+                for ( final FilterRoute filter : filters.value() )
+                {
+                    filteringTemplates.add( new FilteringTemplateInfo( elem, filter, prefix ) );
+                }
+            }
         }
 
-        return true;
+        for ( final Element elem : roundEnv.getElementsAnnotatedWith( FilterRoute.class ) )
+        {
+            final PathPrefix prefix = findPathPrefix( elem );
+            final FilterRoute filter = elem.getAnnotation( FilterRoute.class );
+
+            filteringTemplates.add( new FilteringTemplateInfo( elem, filter, prefix ) );
+            pkg = selectShortestPackage( pkg, elem );
+        }
+
+        return filteringTemplates;
     }
 
     private PathPrefix findPathPrefix( final Element elem )
@@ -146,18 +203,18 @@ public class RoutingAnnotationProcessor
         return pkg;
     }
 
-    private void generateOutput( final String pkg, final Set<RoutingTemplateInfo> infos, final RoundEnvironment roundEnv )
+    private void generateOutput( final String pkg, final String simpleClassName, final String templateName, final Class<?> collectionClass,
+                                 final Set<?> templates, final RoundEnvironment roundEnv )
     {
-        final GStringTemplateEngine engine = new GStringTemplateEngine();
         Template template;
         try
         {
             final FileObject resource = processingEnv.getFiler()
-                                                     .getResource( StandardLocation.CLASS_PATH, TEMPLATE_PKG, TEMPLATE );
+                                                     .getResource( StandardLocation.CLASS_PATH, TEMPLATE_PKG, templateName );
 
             if ( resource == null )
             {
-                throw new IllegalStateException( "Cannot find route template: " + TEMPLATE );
+                throw new IllegalStateException( "Cannot find route template: " + templateName );
             }
 
             template = engine.createTemplate( resource.toUri()
@@ -165,17 +222,17 @@ public class RoutingAnnotationProcessor
         }
         catch ( CompilationFailedException | ClassNotFoundException | IOException e )
         {
-            throw new IllegalStateException( "Cannot load route template: " + TEMPLATE_PKG + "/" + TEMPLATE + ". Reason: " + e.getMessage(), e );
+            throw new IllegalStateException( "Cannot load template: " + TEMPLATE_PKG + "/" + templateName + ". Reason: " + e.getMessage(), e );
         }
 
         System.out.printf( "Package: %s\n", pkg );
         final Map<String, Object> params = new HashMap<>();
         params.put( "pkg", pkg );
-        params.put( "routes", infos );
+        params.put( "templates", templates );
         final Writable output = template.make( params );
 
-        final String clsName = pkg + ".Routes";
-        System.out.printf( "Generating routes class: %s\n", clsName );
+        final String clsName = pkg + "." + simpleClassName;
+        System.out.printf( "Generating class: %s\n", clsName );
 
         final Filer filer = processingEnv.getFiler();
         Writer sourceWriter = null;
@@ -189,7 +246,7 @@ public class RoutingAnnotationProcessor
         catch ( final IOException e )
         {
             processingEnv.getMessager()
-                         .printMessage( Kind.ERROR, "While generating sources for routes class: '" + clsName + "', error: " + e.getMessage() );
+                         .printMessage( Kind.ERROR, "While generating sources for class: '" + clsName + "', error: " + e.getMessage() );
         }
         finally
         {
@@ -205,13 +262,13 @@ public class RoutingAnnotationProcessor
             }
         }
 
-        final String resName = "META-INF/services/" + RouteCollection.class.getName();
+        final String resName = "META-INF/services/" + collectionClass.getName();
 
         Writer svcWriter = null;
         try
         {
             final FileObject file = filer.createResource( StandardLocation.SOURCE_OUTPUT, "", resName, (Element[]) null );
-            System.out.printf( "Generating routes class service entry for: %s in: %s\n", clsName, file.toUri() );
+            System.out.printf( "Generating templates class service entry for: %s in: %s\n", clsName, file.toUri() );
             svcWriter = file.openWriter();
             svcWriter.write( clsName );
         }
@@ -219,7 +276,7 @@ public class RoutingAnnotationProcessor
         {
             processingEnv.getMessager()
                          .printMessage( Kind.ERROR,
-                                        "While generating service configuration for routes class: '" + resName + "', error: " + e.getMessage() );
+                                        "While generating service configuration for templates class: '" + resName + "', error: " + e.getMessage() );
         }
         finally
         {

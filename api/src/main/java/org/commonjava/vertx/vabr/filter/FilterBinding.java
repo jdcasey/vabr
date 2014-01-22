@@ -14,39 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.vertx.vabr;
+package org.commonjava.vertx.vabr.filter;
 
+import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.Method;
 import org.vertx.java.core.http.HttpServerRequest;
 
-public abstract class RouteBinding
+public abstract class FilterBinding
+    implements Comparable<FilterBinding>
 {
-
-    public static final String RECOMMENDED_CONTENT_TYPE = "Recommended-Content-Type";
 
     private final String path;
 
     private final Method method;
 
-    private final String contentType;
-
     private final int priority;
 
-    protected RouteBinding( final int priority, final String path, final Method method, final String contentType )
+    protected FilterBinding( final int priority, final String path, final Method method, final String contentType )
     {
         this.priority = priority;
         this.path = path;
         this.method = method;
-        this.contentType = contentType.length() < 1 ? null : contentType;
     }
 
     public int getPriority()
     {
         return priority;
-    }
-
-    public String getContentType()
-    {
-        return contentType;
     }
 
     public String getPath()
@@ -62,22 +55,23 @@ public abstract class RouteBinding
     @Override
     public String toString()
     {
-        return "Route [" + method.name() + " " + path + "]";
+        return "Filter [" + method.name() + " " + path + "]";
     }
 
-    public void handle( final ApplicationRouter router, final HttpServerRequest req )
+    public void handle( final ApplicationRouter router, final HttpServerRequest req, final ExecutionChain next )
         throws Exception
     {
-        if ( contentType != null )
-        {
-            req.headers()
-               .add( RECOMMENDED_CONTENT_TYPE, contentType );
-        }
-
-        dispatch( router, req );
+        dispatch( router, req, next );
     }
 
-    protected abstract void dispatch( ApplicationRouter router, HttpServerRequest req )
+    protected abstract void dispatch( ApplicationRouter router, HttpServerRequest req, ExecutionChain next )
         throws Exception;
+
+    @Override
+    public int compareTo( final FilterBinding other )
+    {
+        return Integer.valueOf( priority )
+                      .compareTo( other.priority );
+    }
 
 }
