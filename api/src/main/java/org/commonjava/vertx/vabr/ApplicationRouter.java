@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.commonjava.util.logging.Logger;
+import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -108,11 +109,11 @@ public class ApplicationRouter
                 }
             }
 
-            final BindingContext ctx = findBinding( method, request.path() );
+            BindingContext ctx = findBinding( method, request.path() );
 
             if ( ctx == null )
             {
-                findBinding( Method.ANY, request.path() );
+                ctx = findBinding( Method.ANY, request.path() );
             }
 
             if ( ctx != null )
@@ -151,10 +152,43 @@ public class ApplicationRouter
     protected void parseParams( final BindingContext ctx, final HttpServerRequest request )
     {
         final Map<String, String> params = new HashMap<>( ctx.matcher.groupCount() );
+
+        final String fullPath = request.path();
+
+        final PathPrefix pp = ctx.binding.handler.getMethod()
+                                                 .getDeclaringClass()
+                                                 .getAnnotation( PathPrefix.class );
+        if ( pp != null )
+        {
+            final String pathPrefix = pp.value();
+            int idx = fullPath.indexOf( pathPrefix );
+            if ( idx > -1 )
+            {
+                idx += pathPrefix.length();
+                final String prefix = fullPath.substring( 0, idx );
+                params.put( BuiltInParam._classBase.key(), prefix );
+            }
+        }
+
         if ( ctx.binding.paramNames != null )
         {
             // Named params
             int i = 1;
+
+            if ( !ctx.binding.paramNames.isEmpty() )
+            {
+                // We should absolutely be able to figure this out without being defensive.
+                final int firstIdx = ctx.matcher.start( i );
+                String basePath = fullPath.substring( 0, firstIdx );
+
+                if ( basePath.endsWith( "/" ) )
+                {
+                    basePath = basePath.substring( 0, basePath.length() - 1 );
+                }
+
+                params.put( BuiltInParam._routeBase.key(), basePath );
+            }
+
             for ( final String param : ctx.binding.paramNames )
             {
                 final String v = ctx.matcher.group( i );
@@ -176,6 +210,24 @@ public class ApplicationRouter
                 {
                     logger.info( "PARAM param%s = %s", i, v );
                     params.put( "param" + i, v );
+                }
+            }
+        }
+
+        final String query = request.query();
+        if ( query != null )
+        {
+            final String[] qe = query.split( "&" );
+            for ( final String entry : qe )
+            {
+                final int idx = entry.indexOf( '=' );
+                if ( idx > 1 )
+                {
+                    params.put( "q:" + entry.substring( 0, idx ), entry.substring( idx + 1 ) );
+                }
+                else
+                {
+                    params.put( "q:" + entry, "true" );
                 }
             }
         }

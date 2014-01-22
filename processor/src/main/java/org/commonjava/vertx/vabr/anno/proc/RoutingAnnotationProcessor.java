@@ -43,11 +43,13 @@ import javax.tools.StandardLocation;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.commonjava.vertx.vabr.RouteCollection;
+import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.commonjava.vertx.vabr.anno.Route;
 import org.commonjava.vertx.vabr.anno.Routes;
 
 /* @formatter:off */
 @SupportedAnnotationTypes( { 
+    "org.commonjava.vertx.vabr.anno.PathPrefix",
     "org.commonjava.vertx.vabr.anno.Routes",
     "org.commonjava.vertx.vabr.anno.Route"
 } )
@@ -79,6 +81,8 @@ public class RoutingAnnotationProcessor
         {
             System.out.printf( "Processing: %s\n", elem );
 
+            final PathPrefix prefix = findPathPrefix( elem );
+
             pkg = selectShortestPackage( pkg, elem );
 
             final Routes routes = elem.getAnnotation( Routes.class );
@@ -86,15 +90,17 @@ public class RoutingAnnotationProcessor
             {
                 for ( final Route route : routes.value() )
                 {
-                    infos.add( new RoutingTemplateInfo( elem, route ) );
+                    infos.add( new RoutingTemplateInfo( elem, route, prefix ) );
                 }
             }
         }
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( Route.class ) )
         {
+            final PathPrefix prefix = findPathPrefix( elem );
             final Route route = elem.getAnnotation( Route.class );
-            infos.add( new RoutingTemplateInfo( elem, route ) );
+
+            infos.add( new RoutingTemplateInfo( elem, route, prefix ) );
             pkg = selectShortestPackage( pkg, elem );
         }
 
@@ -105,6 +111,18 @@ public class RoutingAnnotationProcessor
         }
 
         return true;
+    }
+
+    private PathPrefix findPathPrefix( final Element elem )
+    {
+        Element pe = elem;
+        do
+        {
+            pe = pe.getEnclosingElement();
+        }
+        while ( pe != null && pe.getKind() != ElementKind.CLASS );
+
+        return pe.getAnnotation( PathPrefix.class );
     }
 
     private String selectShortestPackage( final String pkg, final Element elem )

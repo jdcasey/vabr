@@ -22,6 +22,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
 import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.commonjava.vertx.vabr.anno.Route;
 
 public final class RoutingTemplateInfo
@@ -41,22 +42,22 @@ public final class RoutingTemplateInfo
 
     private final String httpContentType;
 
-    public RoutingTemplateInfo( final String packagename, final String qualifiedClassname, final String classname,
-                                final String methodname, final Route route )
+    //    public RoutingTemplateInfo( final String packagename, final String qualifiedClassname, final String classname, final String methodname,
+    //                                final Route route )
+    //    {
+    //        this.packagename = packagename;
+    //        this.qualifiedClassname = qualifiedClassname;
+    //        this.classname = classname;
+    //        this.methodname = methodname;
+    //        this.httpMethod = route.method();
+    //        this.httpPath = route.path();
+    //        this.httpContentType = route.contentType();
+    //    }
+    //
+    public RoutingTemplateInfo( final Element elem, final Route route, final PathPrefix prefix )
     {
-        this.packagename = packagename;
-        this.qualifiedClassname = qualifiedClassname;
-        this.classname = classname;
-        this.methodname = methodname;
         this.httpMethod = route.method();
-        this.httpPath = route.path();
-        this.httpContentType = route.contentType();
-    }
-
-    public RoutingTemplateInfo( final Element elem, final Route route )
-    {
-        this.httpMethod = route.method();
-        this.httpPath = route.path();
+        this.httpPath = pathOf( prefix, route );
         this.httpContentType = route.contentType();
         // it only applies to methods...
         final ExecutableElement eelem = (ExecutableElement) elem;
@@ -73,6 +74,47 @@ public final class RoutingTemplateInfo
                        .toString();
         packagename = pkg.getQualifiedName()
                          .toString();
+    }
+
+    private String pathOf( final PathPrefix prefix, final Route route )
+    {
+        final StringBuilder sb = new StringBuilder();
+        if ( prefix != null )
+        {
+            String pfx = prefix.value();
+            if ( pfx.endsWith( "/" ) )
+            {
+                pfx = pfx.substring( 0, pfx.length() - 1 );
+            }
+
+            sb.append( pfx );
+        }
+
+        String suff = null;
+        if ( route.path() != null && route.path()
+                                          .trim()
+                                          .length() > 0 )
+        {
+            suff = route.path();
+        }
+        else if ( route.value() != null && route.value()
+                                                .trim()
+                                                .length() > 0 )
+        {
+            suff = route.value();
+        }
+
+        if ( suff != null )
+        {
+            if ( !suff.startsWith( "/" ) && suff.length() > 0 )
+            {
+                sb.append( "/" );
+            }
+
+            sb.append( suff );
+        }
+
+        return sb.toString();
     }
 
     public String getPackagename()

@@ -28,11 +28,13 @@ import org.commonjava.vertx.vabr.Method;
 public @interface Route
 {
 
+    String value() default "";
+
     int priority() default 50;
 
-    String path();
+    String path() default "";
 
-    Method method();
+    Method method() default Method.GET;
 
     String contentType() default "";
 
