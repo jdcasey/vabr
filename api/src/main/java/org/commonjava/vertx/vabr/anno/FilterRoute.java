@@ -16,4 +16,6 @@ public @interface FilterRoute
     String path() default "";
 
     Method method() default Method.GET;
+
+    int priority() default 50;
 }

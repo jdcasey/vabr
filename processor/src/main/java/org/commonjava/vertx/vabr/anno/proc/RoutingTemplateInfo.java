@@ -28,6 +28,8 @@ import org.commonjava.vertx.vabr.anno.Route;
 public final class RoutingTemplateInfo
 {
 
+    private final int priority;
+
     private final String packagename;
 
     private final String qualifiedClassname;
@@ -56,6 +58,7 @@ public final class RoutingTemplateInfo
     //
     public RoutingTemplateInfo( final Element elem, final Route route, final PathPrefix prefix )
     {
+        this.priority = route.priority();
         this.httpMethod = route.method();
         this.httpPath = pathOf( prefix, route );
         this.httpContentType = route.contentType();
@@ -150,6 +153,11 @@ public final class RoutingTemplateInfo
     public String getHttpContentType()
     {
         return httpContentType;
+    }
+
+    public int getPriority()
+    {
+        return priority;
     }
 
 }

@@ -30,7 +30,7 @@ public abstract class FilterBinding
 
     private final int priority;
 
-    protected FilterBinding( final int priority, final String path, final Method method, final String contentType )
+    protected FilterBinding( final int priority, final String path, final Method method )
     {
         this.priority = priority;
         this.path = path;

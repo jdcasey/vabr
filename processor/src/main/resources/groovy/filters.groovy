@@ -18,7 +18,7 @@ public final class Filters
 
     public Filters()
     {<% templates.each { %>
-        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}" )
+        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod} )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest req, ExecutionChain chain )
                 throws Exception

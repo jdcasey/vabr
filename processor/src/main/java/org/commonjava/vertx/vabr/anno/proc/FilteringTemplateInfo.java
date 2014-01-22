@@ -28,6 +28,8 @@ import org.commonjava.vertx.vabr.anno.PathPrefix;
 public final class FilteringTemplateInfo
 {
 
+    private final int priority;
+
     private final String packagename;
 
     private final String qualifiedClassname;
@@ -42,6 +44,7 @@ public final class FilteringTemplateInfo
 
     public FilteringTemplateInfo( final Element elem, final FilterRoute route, final PathPrefix prefix )
     {
+        this.priority = route.priority();
         this.httpMethod = route.method();
         this.httpPath = pathOf( prefix, route );
         // it only applies to methods...
@@ -130,6 +133,11 @@ public final class FilteringTemplateInfo
     public String getHttpPath()
     {
         return httpPath;
+    }
+
+    public int getPriority()
+    {
+        return priority;
     }
 
 }
