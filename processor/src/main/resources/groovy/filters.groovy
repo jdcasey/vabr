@@ -11,7 +11,7 @@ import org.vertx.java.core.http.HttpServerRequest;
 import org.commonjava.util.logging.Logger;
 
 public final class Filters
-    extends AbstractRouteCollection
+    extends AbstractFilterCollection
 {
 
     private final Logger logger = new Logger( getClass() );
