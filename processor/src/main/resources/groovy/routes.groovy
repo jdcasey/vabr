@@ -17,7 +17,7 @@ public final class Routes
 
     public Routes()
     {<% templates.each { %>
-        bind( new RouteBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}" )
+        bind( new RouteBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}" )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest req )
                 throws Exception
@@ -30,7 +30,7 @@ public final class Routes
                 }
                 else
                 {
-                    throw new RuntimeException( "Cannot retrieve handler instance for: '${it.httpPath}' using method: '${it.httpMethod.name()}'" );
+                    throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
                 } 
             }
         } );

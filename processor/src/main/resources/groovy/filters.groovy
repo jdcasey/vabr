@@ -18,7 +18,7 @@ public final class Filters
 
     public Filters()
     {<% templates.each { %>
-        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod} )
+        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}" )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest req, ExecutionChain chain )
                 throws Exception
@@ -31,7 +31,7 @@ public final class Filters
                 }
                 else
                 {
-                    throw new RuntimeException( "Cannot retrieve handler instance for: '${it.httpPath}' using method: '${it.httpMethod.name()}'" );
+                    throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
                 } 
             }
         } );

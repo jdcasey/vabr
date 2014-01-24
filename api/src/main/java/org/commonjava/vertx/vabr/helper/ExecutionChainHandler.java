@@ -39,6 +39,7 @@ public class ExecutionChainHandler
     }
 
     public void execute()
+        throws Exception
     {
         int i = 0;
         if ( filters != null )
@@ -51,6 +52,13 @@ public class ExecutionChainHandler
 
             // for base route binding.
             chains.add( new ExecutionChainImpl( i ) );
+
+            chains.get( 0 )
+                  .handle();
+        }
+        else
+        {
+            route.handle( router, request );
         }
     }
 

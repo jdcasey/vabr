@@ -23,6 +23,7 @@ import javax.lang.model.element.TypeElement;
 
 import org.commonjava.vertx.vabr.Method;
 import org.commonjava.vertx.vabr.anno.FilterRoute;
+import org.commonjava.vertx.vabr.anno.HandlerClass;
 import org.commonjava.vertx.vabr.anno.PathPrefix;
 
 public final class FilteringTemplateInfo
@@ -42,8 +43,11 @@ public final class FilteringTemplateInfo
 
     private final String httpPath;
 
-    public FilteringTemplateInfo( final Element elem, final FilterRoute route, final PathPrefix prefix )
+    private final String handlerKey;
+
+    public FilteringTemplateInfo( final Element elem, final FilterRoute route, final HandlerClass key, final PathPrefix prefix )
     {
+        this.handlerKey = key.value();
         this.priority = route.priority();
         this.httpMethod = route.method();
         this.httpPath = pathOf( prefix, route );
@@ -138,6 +142,11 @@ public final class FilteringTemplateInfo
     public int getPriority()
     {
         return priority;
+    }
+
+    public String getHandlerKey()
+    {
+        return handlerKey;
     }
 
 }

@@ -30,11 +30,14 @@ public abstract class FilterBinding
 
     private final int priority;
 
-    protected FilterBinding( final int priority, final String path, final Method method )
+    private final String handlerKey;
+
+    protected FilterBinding( final int priority, final String path, final Method method, final String handlerKey )
     {
         this.priority = priority;
         this.path = path;
         this.method = method;
+        this.handlerKey = handlerKey;
     }
 
     public int getPriority()
@@ -52,10 +55,15 @@ public abstract class FilterBinding
         return method;
     }
 
+    public String getHandlerKey()
+    {
+        return handlerKey;
+    }
+
     @Override
     public String toString()
     {
-        return "Filter [" + method.name() + " " + path + "]";
+        return "Filter [" + method.name() + " " + path + "] => " + handlerKey;
     }
 
     public void handle( final ApplicationRouter router, final HttpServerRequest req, final ExecutionChain next )

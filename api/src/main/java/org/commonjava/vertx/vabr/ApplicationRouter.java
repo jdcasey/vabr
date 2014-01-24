@@ -25,17 +25,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.commonjava.util.logging.Logger;
+import org.commonjava.vertx.vabr.anno.HandlerClass;
 import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.commonjava.vertx.vabr.filter.FilterBinding;
 import org.commonjava.vertx.vabr.filter.FilterCollection;
-import org.commonjava.vertx.vabr.filter.FilterHandler;
 import org.commonjava.vertx.vabr.helper.BindingContext;
 import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
 import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
 import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
 import org.commonjava.vertx.vabr.route.RouteBinding;
 import org.commonjava.vertx.vabr.route.RouteCollection;
-import org.commonjava.vertx.vabr.route.RouteHandler;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -51,9 +50,7 @@ public class ApplicationRouter
 
     private final Map<Method, List<PatternFilterBinding>> filterBindings = new HashMap<>();
 
-    private Map<String, RouteHandler> routes = new HashMap<>();
-
-    private final Map<String, FilterHandler> filters = new HashMap<>();
+    private final Map<String, Object> handlers = new HashMap<>();
 
     private Handler<HttpServerRequest> noMatchHandler;
 
@@ -64,7 +61,7 @@ public class ApplicationRouter
         this.prefix = null;
     }
 
-    public ApplicationRouter( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = null;
         bindRoutes( routes, routeCollections );
@@ -75,41 +72,66 @@ public class ApplicationRouter
         this.prefix = prefix;
     }
 
-    public ApplicationRouter( final String prefix, final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public ApplicationRouter( final String prefix, final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = prefix;
         bindRoutes( routes, routeCollections );
     }
 
-    public void bindFilters( final Iterable<FilterHandler> filters, final Iterable<FilterCollection> filterCollections )
+    public void bindFilters( final Iterable<?> handlers, final Iterable<FilterCollection> filterCollections )
     {
-        for ( final FilterHandler filter : filters )
+        for ( final Object handler : handlers )
         {
-            this.filters.put( filter.getClass()
-                                    .getName(), filter );
+            final String key = getHandlerKey( handler.getClass() );
+            if ( this.handlers.containsKey( key ) )
+            {
+                continue;
+            }
+
+            logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                                                            .getName() );
+            this.handlers.put( key, handler );
         }
 
         for ( final FilterCollection fc : filterCollections )
         {
             for ( final FilterBinding fb : fc )
             {
+                if ( !this.handlers.containsKey( fb.getHandlerKey() ) )
+                {
+                    logger.error( "Route handler '%s' not found for binding: %s", fb.getHandlerKey(), fb );
+                }
+
                 bind( fb );
             }
         }
     }
 
-    public void bindRoutes( final Iterable<RouteHandler> routes, final Iterable<RouteCollection> routeCollections )
+    public void bindRoutes( final Iterable<?> handlers, final Iterable<RouteCollection> routeCollections )
     {
-        for ( final RouteHandler route : routes )
+        for ( final Object handler : handlers )
         {
-            this.routes.put( route.getClass()
-                                  .getName(), route );
+            final String key = getHandlerKey( handler.getClass() );
+            if ( this.handlers.containsKey( key ) )
+            {
+                continue;
+            }
+
+            logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                                                            .getName() );
+            this.handlers.put( key, handler );
         }
 
         for ( final RouteCollection rc : routeCollections )
         {
             for ( final RouteBinding rb : rc )
             {
+                if ( !this.handlers.containsKey( rb.getHandlerKey() ) )
+                {
+                    logger.error( "Route handler '%s' not found for binding: %s", rb.getHandlerKey(), rb );
+                }
+
+                logger.info( "Routes += %s (%s)", rb.getPath(), rb.getMethod() );
                 bind( rb );
             }
         }
@@ -117,7 +139,7 @@ public class ApplicationRouter
 
     public <T> T getResourceInstance( final Class<T> cls )
     {
-        final RouteHandler handler = routes.get( cls.getName() );
+        final Object handler = handlers.get( getHandlerKey( cls ) );
         return handler == null ? null : cls.cast( handler );
     }
 
@@ -126,60 +148,83 @@ public class ApplicationRouter
     {
         try
         {
-            final Method method = Method.valueOf( request.method() );
-
-            //            logger.info( "REQUEST>>> %s %s\n", method, request.path() );
-
-            String path = request.path();
-            if ( prefix == null || path.startsWith( prefix ) )
+            if ( !routeRequest( request.path(), request ) )
             {
-                if ( prefix != null )
+                if ( noMatchHandler != null )
                 {
-                    path = path.substring( prefix.length() - 1 );
+                    noMatchHandler.handle( request );
                 }
-            }
 
-            BindingContext ctx = findBinding( method, request.path() );
-
-            if ( ctx == null )
-            {
-                ctx = findBinding( Method.ANY, request.path() );
-            }
-
-            if ( ctx != null )
-            {
-                final RouteBinding handler = ctx.getRouteBinding()
-                                                .getHandler();
-                // FIXME Wrap this in an executor that knows about filters AND the fundamental route...
-                logger.info( "MATCH: %s\n", handler );
-                parseParams( ctx, request );
-
-                new ExecutionChainHandler( this, ctx, request ).execute();
-                return;
-            }
-
-            if ( noMatchHandler != null )
-            {
-                noMatchHandler.handle( request );
-            }
-            else
-            {
                 // Default 404
                 request.response()
                        .setStatusCode( 404 )
-                       .setStatusMessage( "No handler found" )
-                       .end();
+                       .setStatusMessage( "Not Found" )
+                       .setChunked( true )
+                       .write( "No handler found" );
             }
         }
         catch ( final Throwable t )
         {
-            logger.info( "ERROR: %s", t.getMessage() );
-            t.printStackTrace();
+            logger.error( "ERROR: %s", t, t.getMessage() );
             request.response()
                    .setStatusCode( 500 )
-                   .setStatusMessage( "Error occurred during processing. See logs for more information." )
+                   .setStatusMessage( "Internal Server Error" )
+                   .setChunked( true )
+                   .write( "Error occurred during processing. See logs for more information." );
+        }
+        finally
+        {
+            request.response()
                    .end();
         }
+    }
+
+    public boolean routeRequest( String path, final HttpServerRequest request )
+        throws Exception
+    {
+        logger.info( "Originating path: %s", path );
+        if ( prefix != null )
+        {
+            if ( !path.startsWith( prefix ) )
+            {
+                return false;
+            }
+            else
+            {
+                logger.info( "Trimming off: '%s'", path.substring( 0, prefix.length() ) );
+                path = path.substring( prefix.length() );
+            }
+        }
+
+        if ( path.length() < 1 )
+        {
+            path = "/";
+        }
+
+        final Method method = Method.valueOf( request.method() );
+
+        logger.info( "REQUEST>>> %s %s\n", method, path );
+
+        BindingContext ctx = findBinding( method, path );
+
+        if ( ctx == null )
+        {
+            ctx = findBinding( Method.ANY, path );
+        }
+
+        if ( ctx != null )
+        {
+            final RouteBinding handler = ctx.getRouteBinding()
+                                            .getHandler();
+            // FIXME Wrap this in an executor that knows about filters AND the fundamental route...
+            logger.info( "MATCH: %s\n", handler );
+            parseParams( ctx, request );
+
+            new ExecutionChainHandler( this, ctx, request ).execute();
+            return true;
+        }
+
+        return false;
     }
 
     protected void parseParams( final BindingContext ctx, final HttpServerRequest request )
@@ -281,14 +326,17 @@ public class ApplicationRouter
         final List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
 
         PatternFilterBinding filterBinding = null;
-        for ( final PatternFilterBinding binding : allFilterBindings )
+        if ( allFilterBindings != null )
         {
-            if ( binding.getPattern()
-                        .matcher( path )
-                        .matches() )
+            for ( final PatternFilterBinding binding : allFilterBindings )
             {
-                filterBinding = binding;
-                break;
+                if ( binding.getPattern()
+                            .matcher( path )
+                            .matches() )
+                {
+                    filterBinding = binding;
+                    break;
+                }
             }
         }
 
@@ -452,9 +500,9 @@ public class ApplicationRouter
         return filterBindings;
     }
 
-    public Map<String, RouteHandler> getRoutes()
+    public Map<String, ?> getHandlers()
     {
-        return routes;
+        return handlers;
     }
 
     public Handler<HttpServerRequest> getNoMatchHandler()
@@ -482,9 +530,21 @@ public class ApplicationRouter
         this.routeBindings = bindings;
     }
 
-    protected void setRoutes( final Map<String, RouteHandler> routes )
+    protected void setHandlers( final Map<String, Object> handlers )
     {
-        this.routes = routes;
+        this.handlers.clear();
+        this.handlers.putAll( handlers );
+    }
+
+    private String getHandlerKey( final Class<?> cls )
+    {
+        final HandlerClass key = cls.getAnnotation( HandlerClass.class );
+        if ( key == null )
+        {
+            throw new IllegalArgumentException( "Handler classes MUST declare @" + HandlerClass.class.getSimpleName() + " with a unique key!" );
+        }
+
+        return key.value();
     }
 
 }

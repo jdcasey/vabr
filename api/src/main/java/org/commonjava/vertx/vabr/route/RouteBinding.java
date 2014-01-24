@@ -33,11 +33,14 @@ public abstract class RouteBinding
 
     private final int priority;
 
-    protected RouteBinding( final int priority, final String path, final Method method, final String contentType )
+    private final String handlerKey;
+
+    protected RouteBinding( final int priority, final String path, final Method method, final String contentType, final String handlerKey )
     {
         this.priority = priority;
         this.path = path;
         this.method = method;
+        this.handlerKey = handlerKey;
         this.contentType = contentType.length() < 1 ? null : contentType;
     }
 
@@ -61,10 +64,15 @@ public abstract class RouteBinding
         return method;
     }
 
+    public String getHandlerKey()
+    {
+        return handlerKey;
+    }
+
     @Override
     public String toString()
     {
-        return "Route [" + method.name() + " " + path + "]";
+        return "Route [" + method.name() + " " + path + "] => " + handlerKey;
     }
 
     public void handle( final ApplicationRouter router, final HttpServerRequest req )

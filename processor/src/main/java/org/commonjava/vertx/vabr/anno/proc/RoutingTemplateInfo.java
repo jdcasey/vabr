@@ -22,6 +22,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
 import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.anno.HandlerClass;
 import org.commonjava.vertx.vabr.anno.PathPrefix;
 import org.commonjava.vertx.vabr.anno.Route;
 
@@ -44,6 +45,8 @@ public final class RoutingTemplateInfo
 
     private final String httpContentType;
 
+    private final String handlerKey;
+
     //    public RoutingTemplateInfo( final String packagename, final String qualifiedClassname, final String classname, final String methodname,
     //                                final Route route )
     //    {
@@ -56,8 +59,9 @@ public final class RoutingTemplateInfo
     //        this.httpContentType = route.contentType();
     //    }
     //
-    public RoutingTemplateInfo( final Element elem, final Route route, final PathPrefix prefix )
+    public RoutingTemplateInfo( final Element elem, final Route route, final HandlerClass key, final PathPrefix prefix )
     {
+        this.handlerKey = key.value();
         this.priority = route.priority();
         this.httpMethod = route.method();
         this.httpPath = pathOf( prefix, route );
@@ -160,4 +164,8 @@ public final class RoutingTemplateInfo
         return priority;
     }
 
+    public String getHandlerKey()
+    {
+        return handlerKey;
+    }
 }
