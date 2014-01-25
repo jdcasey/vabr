@@ -45,8 +45,7 @@ import javax.tools.StandardLocation;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.commonjava.vertx.vabr.anno.FilterRoute;
 import org.commonjava.vertx.vabr.anno.FilterRoutes;
-import org.commonjava.vertx.vabr.anno.HandlerClass;
-import org.commonjava.vertx.vabr.anno.PathPrefix;
+import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.anno.Route;
 import org.commonjava.vertx.vabr.anno.Routes;
 import org.commonjava.vertx.vabr.filter.FilterCollection;
@@ -113,8 +112,7 @@ public class RoutingAnnotationProcessor
         {
             System.out.printf( "Processing: %s\n", elem );
 
-            final PathPrefix prefix = findTypeAnnotation( elem, PathPrefix.class );
-            final HandlerClass key = findTypeAnnotation( elem, HandlerClass.class );
+            final Handles handles = findTypeAnnotation( elem, Handles.class );
 
             pkg = selectShortestPackage( pkg, elem );
 
@@ -123,18 +121,17 @@ public class RoutingAnnotationProcessor
             {
                 for ( final Route route : routes.value() )
                 {
-                    routingTemplates.add( new RoutingTemplateInfo( elem, route, key, prefix ) );
+                    routingTemplates.add( new RoutingTemplateInfo( elem, route, handles ) );
                 }
             }
         }
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( Route.class ) )
         {
-            final PathPrefix prefix = findTypeAnnotation( elem, PathPrefix.class );
-            final HandlerClass key = findTypeAnnotation( elem, HandlerClass.class );
+            final Handles handles = findTypeAnnotation( elem, Handles.class );
             final Route route = elem.getAnnotation( Route.class );
 
-            routingTemplates.add( new RoutingTemplateInfo( elem, route, key, prefix ) );
+            routingTemplates.add( new RoutingTemplateInfo( elem, route, handles ) );
             pkg = selectShortestPackage( pkg, elem );
         }
 
@@ -149,8 +146,7 @@ public class RoutingAnnotationProcessor
         {
             System.out.printf( "Processing: %s\n", elem );
 
-            final PathPrefix prefix = findTypeAnnotation( elem, PathPrefix.class );
-            final HandlerClass key = findTypeAnnotation( elem, HandlerClass.class );
+            final Handles handles = findTypeAnnotation( elem, Handles.class );
 
             pkg = selectShortestPackage( pkg, elem );
 
@@ -159,18 +155,17 @@ public class RoutingAnnotationProcessor
             {
                 for ( final FilterRoute filter : filters.value() )
                 {
-                    filteringTemplates.add( new FilteringTemplateInfo( elem, filter, key, prefix ) );
+                    filteringTemplates.add( new FilteringTemplateInfo( elem, filter, handles ) );
                 }
             }
         }
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( FilterRoute.class ) )
         {
-            final PathPrefix prefix = findTypeAnnotation( elem, PathPrefix.class );
-            final HandlerClass key = findTypeAnnotation( elem, HandlerClass.class );
+            final Handles handles = findTypeAnnotation( elem, Handles.class );
             final FilterRoute filter = elem.getAnnotation( FilterRoute.class );
 
-            filteringTemplates.add( new FilteringTemplateInfo( elem, filter, key, prefix ) );
+            filteringTemplates.add( new FilteringTemplateInfo( elem, filter, handles ) );
             pkg = selectShortestPackage( pkg, elem );
         }
 

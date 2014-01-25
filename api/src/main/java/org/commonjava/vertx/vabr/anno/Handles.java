@@ -7,7 +7,11 @@ import java.lang.annotation.Target;
 
 @Target( { ElementType.TYPE } )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface HandlerClass
+public @interface Handles
 {
-    String value();
+    String prefix() default "";
+
+    String value() default "";
+
+    String key() default "";
 }

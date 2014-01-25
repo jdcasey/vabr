@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr;
 
+import static org.commonjava.vertx.vabr.util.AnnotationUtils.getHandlerKey;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,8 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.commonjava.util.logging.Logger;
-import org.commonjava.vertx.vabr.anno.HandlerClass;
-import org.commonjava.vertx.vabr.anno.PathPrefix;
+import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.filter.FilterBinding;
 import org.commonjava.vertx.vabr.filter.FilterCollection;
 import org.commonjava.vertx.vabr.helper.BindingContext;
@@ -239,9 +240,9 @@ public class ApplicationRouter
         final List<String> paramNames = routeBinding.getParamNames();
         final RouteBinding handler = routeBinding.getHandler();
 
-        final PathPrefix pp = handler.getMethod()
-                                     .getDeclaringClass()
-                                     .getAnnotation( PathPrefix.class );
+        final Handles pp = handler.getMethod()
+                                  .getDeclaringClass()
+                                  .getAnnotation( Handles.class );
         if ( pp != null )
         {
             final String pathPrefix = pp.value();
@@ -534,17 +535,6 @@ public class ApplicationRouter
     {
         this.handlers.clear();
         this.handlers.putAll( handlers );
-    }
-
-    private String getHandlerKey( final Class<?> cls )
-    {
-        final HandlerClass key = cls.getAnnotation( HandlerClass.class );
-        if ( key == null )
-        {
-            throw new IllegalArgumentException( "Handler classes MUST declare @" + HandlerClass.class.getSimpleName() + " with a unique key!" );
-        }
-
-        return key.value();
     }
 
 }

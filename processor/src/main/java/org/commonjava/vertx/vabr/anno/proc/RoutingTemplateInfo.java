@@ -22,9 +22,9 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
 import org.commonjava.vertx.vabr.Method;
-import org.commonjava.vertx.vabr.anno.HandlerClass;
-import org.commonjava.vertx.vabr.anno.PathPrefix;
+import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.anno.Route;
+import org.commonjava.vertx.vabr.util.AnnotationUtils;
 
 public final class RoutingTemplateInfo
 {
@@ -59,13 +59,13 @@ public final class RoutingTemplateInfo
     //        this.httpContentType = route.contentType();
     //    }
     //
-    public RoutingTemplateInfo( final Element elem, final Route route, final HandlerClass key, final PathPrefix prefix )
+    public RoutingTemplateInfo( final Element elem, final Route route, final Handles handles )
     {
-        this.handlerKey = key.value();
+        this.httpContentType = route.contentType();
+
         this.priority = route.priority();
         this.httpMethod = route.method();
-        this.httpPath = pathOf( prefix, route );
-        this.httpContentType = route.contentType();
+        this.httpPath = AnnotationUtils.pathOf( handles, route.path(), route.value() );
         // it only applies to methods...
         final ExecutableElement eelem = (ExecutableElement) elem;
 
@@ -77,51 +77,14 @@ public final class RoutingTemplateInfo
 
         qualifiedClassname = cls.getQualifiedName()
                                 .toString();
+
         classname = cls.getSimpleName()
                        .toString();
+
         packagename = pkg.getQualifiedName()
                          .toString();
-    }
 
-    private String pathOf( final PathPrefix prefix, final Route route )
-    {
-        final StringBuilder sb = new StringBuilder();
-        if ( prefix != null )
-        {
-            String pfx = prefix.value();
-            if ( pfx.endsWith( "/" ) )
-            {
-                pfx = pfx.substring( 0, pfx.length() - 1 );
-            }
-
-            sb.append( pfx );
-        }
-
-        String suff = null;
-        if ( route.path() != null && route.path()
-                                          .trim()
-                                          .length() > 0 )
-        {
-            suff = route.path();
-        }
-        else if ( route.value() != null && route.value()
-                                                .trim()
-                                                .length() > 0 )
-        {
-            suff = route.value();
-        }
-
-        if ( suff != null )
-        {
-            if ( !suff.startsWith( "/" ) && suff.length() > 0 )
-            {
-                sb.append( "/" );
-            }
-
-            sb.append( suff );
-        }
-
-        return sb.toString();
+        this.handlerKey = AnnotationUtils.getHandlerKey( handles, qualifiedClassname );
     }
 
     public String getPackagename()
