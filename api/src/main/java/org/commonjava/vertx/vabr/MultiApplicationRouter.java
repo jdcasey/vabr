@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
+import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -69,8 +70,9 @@ public class MultiApplicationRouter
     }
 
     @Override
-    public void handle( final HttpServerRequest request )
+    public void handle( final HttpServerRequest r )
     {
+        final TrackingRequest request = new TrackingRequest( r );
         try
         {
             String path = request.path();
@@ -126,8 +128,12 @@ public class MultiApplicationRouter
         }
         finally
         {
-            request.response()
-                   .end();
+            if ( !request.trackingResponse()
+                         .isEnded() )
+            {
+                request.trackingResponse()
+                       .end();
+            }
         }
     }
 

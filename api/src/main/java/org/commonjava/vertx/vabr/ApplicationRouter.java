@@ -36,6 +36,7 @@ import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
 import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
 import org.commonjava.vertx.vabr.route.RouteBinding;
 import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -145,8 +146,9 @@ public class ApplicationRouter
     }
 
     @Override
-    public void handle( final HttpServerRequest request )
+    public void handle( final HttpServerRequest r )
     {
+        final TrackingRequest request = new TrackingRequest( r );
         try
         {
             if ( !routeRequest( request.path(), request ) )
@@ -175,8 +177,12 @@ public class ApplicationRouter
         }
         finally
         {
-            request.response()
-                   .end();
+            if ( !request.trackingResponse()
+                         .isEnded() )
+            {
+                request.trackingResponse()
+                       .end();
+            }
         }
     }
 
