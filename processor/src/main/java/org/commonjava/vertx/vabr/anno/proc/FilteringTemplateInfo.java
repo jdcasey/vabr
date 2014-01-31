@@ -17,98 +17,16 @@
 package org.commonjava.vertx.vabr.anno.proc;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeElement;
 
-import org.commonjava.vertx.vabr.Method;
 import org.commonjava.vertx.vabr.anno.FilterRoute;
 import org.commonjava.vertx.vabr.anno.Handles;
-import org.commonjava.vertx.vabr.util.AnnotationUtils;
 
 public final class FilteringTemplateInfo
+    extends AbstractTemplateInfo
 {
-
-    private final int priority;
-
-    private final String packagename;
-
-    private final String qualifiedClassname;
-
-    private final String classname;
-
-    private final String methodname;
-
-    private final Method httpMethod;
-
-    private final String httpPath;
-
-    private final String handlerKey;
 
     public FilteringTemplateInfo( final Element elem, final FilterRoute route, final Handles handles )
     {
-        this.priority = route.priority();
-        this.httpMethod = route.method();
-        this.httpPath = AnnotationUtils.pathOf( handles, route.path(), route.value() );
-        // it only applies to methods...
-        final ExecutableElement eelem = (ExecutableElement) elem;
-
-        methodname = eelem.getSimpleName()
-                          .toString();
-
-        final TypeElement cls = (TypeElement) eelem.getEnclosingElement();
-        final PackageElement pkg = (PackageElement) cls.getEnclosingElement();
-
-        qualifiedClassname = cls.getQualifiedName()
-                                .toString();
-
-        classname = cls.getSimpleName()
-                       .toString();
-
-        packagename = pkg.getQualifiedName()
-                         .toString();
-
-        this.handlerKey = AnnotationUtils.getHandlerKey( handles, qualifiedClassname );
+        super( elem, handles, route.priority(), route.method(), route.path(), route.value() );
     }
-
-    public String getPackagename()
-    {
-        return packagename;
-    }
-
-    public String getQualifiedClassname()
-    {
-        return qualifiedClassname;
-    }
-
-    public String getClassname()
-    {
-        return classname;
-    }
-
-    public String getMethodname()
-    {
-        return methodname;
-    }
-
-    public Method getHttpMethod()
-    {
-        return httpMethod;
-    }
-
-    public String getHttpPath()
-    {
-        return httpPath;
-    }
-
-    public int getPriority()
-    {
-        return priority;
-    }
-
-    public String getHandlerKey()
-    {
-        return handlerKey;
-    }
-
 }

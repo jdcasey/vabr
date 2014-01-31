@@ -8,14 +8,17 @@ import org.commonjava.vertx.vabr.route.AbstractRouteCollection;
 import org.vertx.java.core.http.HttpServerRequest;
 
 import org.commonjava.util.logging.Logger;
+<%if( qualifier ){ %>
+import ${qualifier.fullName};
 
-public final class Routes
+@${qualifier.simpleName}<% } %>
+public final class ${className}
     extends AbstractRouteCollection
 {
 
     private final Logger logger = new Logger( getClass() );
 
-    public Routes()
+    public ${className}()
     {<% templates.each { %>
         bind( new RouteBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}" )
         {

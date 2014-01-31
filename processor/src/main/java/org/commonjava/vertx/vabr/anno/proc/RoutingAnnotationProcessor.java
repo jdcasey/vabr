@@ -16,6 +16,7 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr.anno.proc;
 
+import static org.commonjava.vertx.vabr.anno.proc.QualifierInfo.EMPTY_QUALIFIER;
 import groovy.lang.Writable;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
@@ -25,7 +26,9 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -33,7 +36,9 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
+import javax.inject.Qualifier;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
@@ -86,8 +91,8 @@ public class RoutingAnnotationProcessor
 
         System.out.println( "Starting Route Processing..." );
 
-        final Set<RoutingTemplateInfo> routingTemplates = processRoutes( roundEnv );
-        final Set<FilteringTemplateInfo> filteringTemplates = processFilters( roundEnv );
+        final Map<QualifierInfo, Set<RoutingTemplateInfo>> routingTemplates = processRoutes( roundEnv );
+        final Map<QualifierInfo, Set<FilteringTemplateInfo>> filteringTemplates = processFilters( roundEnv );
 
         System.out.printf( "Using package: %s\n", pkg );
 
@@ -104,9 +109,9 @@ public class RoutingAnnotationProcessor
         return true;
     }
 
-    private Set<RoutingTemplateInfo> processRoutes( final RoundEnvironment roundEnv )
+    private Map<QualifierInfo, Set<RoutingTemplateInfo>> processRoutes( final RoundEnvironment roundEnv )
     {
-        final Set<RoutingTemplateInfo> routingTemplates = new HashSet<>();
+        final Map<QualifierInfo, Set<RoutingTemplateInfo>> routingTemplates = new HashMap<>();
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( Routes.class ) )
         {
@@ -121,7 +126,8 @@ public class RoutingAnnotationProcessor
             {
                 for ( final Route route : routes.value() )
                 {
-                    routingTemplates.add( new RoutingTemplateInfo( elem, route, handles ) );
+                    final QualifierInfo key = findQualifierAnnotation( elem );
+                    addTo( routingTemplates, new RoutingTemplateInfo( elem, route, handles ), key );
                 }
             }
         }
@@ -130,17 +136,55 @@ public class RoutingAnnotationProcessor
         {
             final Handles handles = findTypeAnnotation( elem, Handles.class );
             final Route route = elem.getAnnotation( Route.class );
-
-            routingTemplates.add( new RoutingTemplateInfo( elem, route, handles ) );
             pkg = selectShortestPackage( pkg, elem );
+
+            final QualifierInfo key = findQualifierAnnotation( elem );
+            addTo( routingTemplates, new RoutingTemplateInfo( elem, route, handles ), key );
         }
 
         return routingTemplates;
     }
 
-    private Set<FilteringTemplateInfo> processFilters( final RoundEnvironment roundEnv )
+    private <T> void addTo( final Map<QualifierInfo, Set<T>> templates, final T template, final QualifierInfo qi )
     {
-        final Set<FilteringTemplateInfo> filteringTemplates = new HashSet<>();
+        Set<T> routes = templates.get( qi );
+        if ( routes == null )
+        {
+            routes = new HashSet<>();
+            templates.put( qi, routes );
+        }
+
+        routes.add( template );
+    }
+
+    private QualifierInfo findQualifierAnnotation( final Element elem )
+    {
+        Element pe = elem;
+        do
+        {
+            pe = pe.getEnclosingElement();
+        }
+        while ( pe != null && pe.getKind() != ElementKind.CLASS );
+
+        final List<? extends AnnotationMirror> ams = pe.getAnnotationMirrors();
+        for ( final AnnotationMirror am : ams )
+        {
+            final Element annoElem = am.getAnnotationType()
+                                       .asElement();
+
+            final Qualifier qualifier = annoElem.getAnnotation( Qualifier.class );
+            if ( qualifier != null )
+            {
+                return new QualifierInfo( annoElem );
+            }
+        }
+
+        return EMPTY_QUALIFIER;
+    }
+
+    private Map<QualifierInfo, Set<FilteringTemplateInfo>> processFilters( final RoundEnvironment roundEnv )
+    {
+        final Map<QualifierInfo, Set<FilteringTemplateInfo>> filteringTemplates = new HashMap<>();
 
         for ( final Element elem : roundEnv.getElementsAnnotatedWith( FilterRoutes.class ) )
         {
@@ -155,7 +199,8 @@ public class RoutingAnnotationProcessor
             {
                 for ( final FilterRoute filter : filters.value() )
                 {
-                    filteringTemplates.add( new FilteringTemplateInfo( elem, filter, handles ) );
+                    final QualifierInfo key = findQualifierAnnotation( elem );
+                    addTo( filteringTemplates, new FilteringTemplateInfo( elem, filter, handles ), key );
                 }
             }
         }
@@ -165,7 +210,8 @@ public class RoutingAnnotationProcessor
             final Handles handles = findTypeAnnotation( elem, Handles.class );
             final FilterRoute filter = elem.getAnnotation( FilterRoute.class );
 
-            filteringTemplates.add( new FilteringTemplateInfo( elem, filter, handles ) );
+            final QualifierInfo key = findQualifierAnnotation( elem );
+            addTo( filteringTemplates, new FilteringTemplateInfo( elem, filter, handles ), key );
             pkg = selectShortestPackage( pkg, elem );
         }
 
@@ -205,18 +251,19 @@ public class RoutingAnnotationProcessor
         return pkg;
     }
 
-    private void generateOutput( final String pkg, final String simpleClassName, final String templateName, final Class<?> collectionClass,
-                                 final Set<?> templates, final RoundEnvironment roundEnv )
+    private <T extends AbstractTemplateInfo> void generateOutput( final String pkg, final String simpleClassSuffix, final String codeTemplateName,
+                                                                  final Class<?> collectionClass, final Map<QualifierInfo, Set<T>> templates,
+                                                                  final RoundEnvironment roundEnv )
     {
         Template template;
         try
         {
             final FileObject resource = processingEnv.getFiler()
-                                                     .getResource( StandardLocation.CLASS_PATH, TEMPLATE_PKG, templateName );
+                                                     .getResource( StandardLocation.CLASS_PATH, TEMPLATE_PKG, codeTemplateName );
 
             if ( resource == null )
             {
-                throw new IllegalStateException( "Cannot find route template: " + templateName );
+                throw new IllegalStateException( "Cannot find route template: " + codeTemplateName );
             }
 
             template = engine.createTemplate( resource.toUri()
@@ -224,42 +271,65 @@ public class RoutingAnnotationProcessor
         }
         catch ( CompilationFailedException | ClassNotFoundException | IOException e )
         {
-            throw new IllegalStateException( "Cannot load template: " + TEMPLATE_PKG + "/" + templateName + ". Reason: " + e.getMessage(), e );
+            throw new IllegalStateException( "Cannot load template: " + TEMPLATE_PKG + "/" + codeTemplateName + ". Reason: " + e.getMessage(), e );
         }
 
         System.out.printf( "Package: %s\n", pkg );
-        final Map<String, Object> params = new HashMap<>();
-        params.put( "pkg", pkg );
-        params.put( "templates", templates );
-        final Writable output = template.make( params );
-
-        final String clsName = pkg + "." + simpleClassName;
-        System.out.printf( "Generating class: %s\n", clsName );
 
         final Filer filer = processingEnv.getFiler();
-        Writer sourceWriter = null;
-        try
-        {
-            final FileObject file = filer.createSourceFile( clsName );
+        final Set<String> generatedClassNames = new HashSet<>();
 
-            sourceWriter = file.openWriter();
-            output.writeTo( sourceWriter );
-        }
-        catch ( final IOException e )
+        for ( final Entry<QualifierInfo, Set<T>> entry : templates.entrySet() )
         {
-            processingEnv.getMessager()
-                         .printMessage( Kind.ERROR, "While generating sources for class: '" + clsName + "', error: " + e.getMessage() );
-        }
-        finally
-        {
-            if ( sourceWriter != null )
+            final QualifierInfo key = entry.getKey();
+            final Set<?> tmpls = entry.getValue();
+
+            final Map<String, Object> params = new HashMap<>();
+            params.put( "pkg", pkg );
+            params.put( "templates", tmpls );
+
+            params.put( "qualifier", EMPTY_QUALIFIER != key ? key : null );
+
+            final Writable output = template.make( params );
+
+            String simpleName = "";
+            if ( key != EMPTY_QUALIFIER )
             {
-                try
+                simpleName += key.getSimpleName();
+            }
+            simpleName += simpleClassSuffix;
+
+            params.put( "className", simpleName );
+
+            final String clsName = pkg + "." + simpleName;
+
+            System.out.printf( "Generating class: %s\n", clsName );
+
+            Writer sourceWriter = null;
+            try
+            {
+                final FileObject file = filer.createSourceFile( clsName );
+
+                sourceWriter = file.openWriter();
+                output.writeTo( sourceWriter );
+                generatedClassNames.add( clsName );
+            }
+            catch ( final IOException e )
+            {
+                processingEnv.getMessager()
+                             .printMessage( Kind.ERROR, "While generating sources for class: '" + clsName + "', error: " + e.getMessage() );
+            }
+            finally
+            {
+                if ( sourceWriter != null )
                 {
-                    sourceWriter.close();
-                }
-                catch ( final IOException e )
-                {
+                    try
+                    {
+                        sourceWriter.close();
+                    }
+                    catch ( final IOException e )
+                    {
+                    }
                 }
             }
         }
@@ -270,9 +340,9 @@ public class RoutingAnnotationProcessor
         try
         {
             final FileObject file = filer.createResource( StandardLocation.SOURCE_OUTPUT, "", resName, (Element[]) null );
-            System.out.printf( "Generating templates class service entry for: %s in: %s\n", clsName, file.toUri() );
+            System.out.printf( "Generating templates class service entry for:\n  %s\n\nin: %s\n", join( generatedClassNames, "\n  " ), file.toUri() );
             svcWriter = file.openWriter();
-            svcWriter.write( clsName );
+            svcWriter.write( join( generatedClassNames, "\n" ) );
         }
         catch ( final IOException e )
         {
@@ -294,6 +364,21 @@ public class RoutingAnnotationProcessor
             }
         }
 
+    }
+
+    private String join( final Iterable<?> objects, final String joint )
+    {
+        final StringBuilder sb = new StringBuilder();
+        for ( final Object obj : objects )
+        {
+            if ( sb.length() > 0 )
+            {
+                sb.append( joint );
+            }
+            sb.append( obj );
+        }
+
+        return sb.toString();
     }
 
 }

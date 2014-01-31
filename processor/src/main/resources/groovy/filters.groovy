@@ -9,14 +9,17 @@ import org.commonjava.vertx.vabr.filter.AbstractFilterCollection;
 import org.vertx.java.core.http.HttpServerRequest;
 
 import org.commonjava.util.logging.Logger;
+<%if( qualifier ){ %>
+import ${qualifier.fullName};
 
-public final class Filters
+@${qualifier.simpleName}<% } %>
+public final class ${className}
     extends AbstractFilterCollection
 {
 
     private final Logger logger = new Logger( getClass() );
 
-    public Filters()
+    public ${className}()
     {<% templates.each { %>
         bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}" )
         {

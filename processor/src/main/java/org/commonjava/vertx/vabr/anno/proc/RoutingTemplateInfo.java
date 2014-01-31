@@ -17,118 +17,24 @@
 package org.commonjava.vertx.vabr.anno.proc;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeElement;
 
-import org.commonjava.vertx.vabr.Method;
 import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.anno.Route;
-import org.commonjava.vertx.vabr.util.AnnotationUtils;
 
 public final class RoutingTemplateInfo
+    extends AbstractTemplateInfo
 {
-
-    private final int priority;
-
-    private final String packagename;
-
-    private final String qualifiedClassname;
-
-    private final String classname;
-
-    private final String methodname;
-
-    private final Method httpMethod;
-
-    private final String httpPath;
 
     private final String httpContentType;
 
-    private final String handlerKey;
-
-    //    public RoutingTemplateInfo( final String packagename, final String qualifiedClassname, final String classname, final String methodname,
-    //                                final Route route )
-    //    {
-    //        this.packagename = packagename;
-    //        this.qualifiedClassname = qualifiedClassname;
-    //        this.classname = classname;
-    //        this.methodname = methodname;
-    //        this.httpMethod = route.method();
-    //        this.httpPath = route.path();
-    //        this.httpContentType = route.contentType();
-    //    }
-    //
     public RoutingTemplateInfo( final Element elem, final Route route, final Handles handles )
     {
+        super( elem, handles, route.priority(), route.method(), route.path(), route.value() );
         this.httpContentType = route.contentType();
-
-        this.priority = route.priority();
-        this.httpMethod = route.method();
-        this.httpPath = AnnotationUtils.pathOf( handles, route.path(), route.value() );
-        // it only applies to methods...
-        final ExecutableElement eelem = (ExecutableElement) elem;
-
-        methodname = eelem.getSimpleName()
-                          .toString();
-
-        final TypeElement cls = (TypeElement) eelem.getEnclosingElement();
-        final PackageElement pkg = (PackageElement) cls.getEnclosingElement();
-
-        qualifiedClassname = cls.getQualifiedName()
-                                .toString();
-
-        classname = cls.getSimpleName()
-                       .toString();
-
-        packagename = pkg.getQualifiedName()
-                         .toString();
-
-        this.handlerKey = AnnotationUtils.getHandlerKey( handles, qualifiedClassname );
-    }
-
-    public String getPackagename()
-    {
-        return packagename;
-    }
-
-    public String getQualifiedClassname()
-    {
-        return qualifiedClassname;
-    }
-
-    public String getClassname()
-    {
-        return classname;
-    }
-
-    public String getMethodname()
-    {
-        return methodname;
-    }
-
-    public Method getHttpMethod()
-    {
-        return httpMethod;
-    }
-
-    public String getHttpPath()
-    {
-        return httpPath;
     }
 
     public String getHttpContentType()
     {
         return httpContentType;
-    }
-
-    public int getPriority()
-    {
-        return priority;
-    }
-
-    public String getHandlerKey()
-    {
-        return handlerKey;
     }
 }

@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
+import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
@@ -47,10 +48,7 @@ public class MultiApplicationRouter
     {
         this.prefix = null;
         this.routers = new ArrayList<>();
-        for ( final ApplicationRouter router : routers )
-        {
-            this.routers.add( router );
-        }
+        bindRouters( routers );
     }
 
     public MultiApplicationRouter( final String prefix )
@@ -63,6 +61,11 @@ public class MultiApplicationRouter
     {
         this.prefix = prefix;
         this.routers = new ArrayList<>();
+        bindRouters( routers );
+    }
+
+    protected void bindRouters( final Iterable<? extends ApplicationRouter> routers )
+    {
         for ( final ApplicationRouter router : routers )
         {
             this.routers.add( router );
@@ -77,23 +80,18 @@ public class MultiApplicationRouter
         {
             String path = request.path();
             boolean proceed = true;
-            if ( prefix != null )
+            path = RouterUtils.trimPrefix( prefix, path );
+            if ( path == null )
             {
-                if ( !path.startsWith( prefix ) )
-                {
-                    proceed = false;
-                }
-                else
-                {
-                    path = path.substring( prefix.length() - 1 );
-                }
+                proceed = false;
             }
 
             boolean found = false;
-            if ( !proceed )
+            if ( proceed )
             {
                 for ( final ApplicationRouter router : routers )
                 {
+                    logger.info( "attempting to route '%s' via: %s", path, router );
                     if ( router.routeRequest( path, request ) )
                     {
                         found = true;
@@ -102,19 +100,24 @@ public class MultiApplicationRouter
                 }
             }
 
+            // TODO: Determine whether to respond when proceed == false.
+
             if ( !found )
             {
                 if ( noMatchHandler != null )
                 {
                     noMatchHandler.handle( request );
                 }
-
-                // Default 404
-                request.response()
-                       .setStatusCode( 404 )
-                       .setStatusMessage( "Not Found" )
-                       .setChunked( true )
-                       .write( "No handler found" );
+                else
+                {
+                    // Default 404
+                    request.response()
+                           .setStatusCode( 404 )
+                           .setStatusMessage( "Not Found" )
+                           .setChunked( true )
+                           .write( "No handler found" )
+                           .end();
+                }
             }
         }
         catch ( final Throwable t )
@@ -124,7 +127,8 @@ public class MultiApplicationRouter
                    .setStatusCode( 500 )
                    .setStatusMessage( "Internal Server Error" )
                    .setChunked( true )
-                   .write( "Error occurred during processing. See logs for more information." );
+                   .write( "Error occurred during processing. See logs for more information." )
+                   .end();
         }
         finally
         {

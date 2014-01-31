@@ -35,6 +35,10 @@
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-templates</artifactId>
     </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+    </dependency>
   </dependencies>
   
 </project>

@@ -36,6 +36,7 @@ import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
 import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
 import org.commonjava.vertx.vabr.route.RouteBinding;
 import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
@@ -97,6 +98,9 @@ public class ApplicationRouter
 
         for ( final FilterCollection fc : filterCollections )
         {
+            logger.info( "Binding filters in collection: %s", fc.getClass()
+                                                                .getName() );
+
             for ( final FilterBinding fb : fc )
             {
                 if ( !this.handlers.containsKey( fb.getHandlerKey() ) )
@@ -126,6 +130,9 @@ public class ApplicationRouter
 
         for ( final RouteCollection rc : routeCollections )
         {
+            logger.info( "Binding routes in collection: %s", rc.getClass()
+                                                               .getName() );
+
             for ( final RouteBinding rb : rc )
             {
                 if ( !this.handlers.containsKey( rb.getHandlerKey() ) )
@@ -157,13 +164,15 @@ public class ApplicationRouter
                 {
                     noMatchHandler.handle( request );
                 }
-
-                // Default 404
-                request.response()
-                       .setStatusCode( 404 )
-                       .setStatusMessage( "Not Found" )
-                       .setChunked( true )
-                       .write( "No handler found" );
+                else
+                {
+                    // Default 404
+                    request.response()
+                           .setStatusCode( 404 )
+                           .setStatusMessage( "Not Found" )
+                           .setChunked( true )
+                           .write( "No handler found" );
+                }
             }
         }
         catch ( final Throwable t )
@@ -190,22 +199,10 @@ public class ApplicationRouter
         throws Exception
     {
         logger.info( "Originating path: %s", path );
-        if ( prefix != null )
+        path = RouterUtils.trimPrefix( prefix, path );
+        if ( path == null )
         {
-            if ( !path.startsWith( prefix ) )
-            {
-                return false;
-            }
-            else
-            {
-                logger.info( "Trimming off: '%s'", path.substring( 0, prefix.length() ) );
-                path = path.substring( prefix.length() );
-            }
-        }
-
-        if ( path.length() < 1 )
-        {
-            path = "/";
+            return false;
         }
 
         final Method method = Method.valueOf( request.method() );
@@ -268,9 +265,10 @@ public class ApplicationRouter
 
             if ( !paramNames.isEmpty() )
             {
-                // We should absolutely be able to figure this out without being defensive.
                 final int firstIdx = matcher.start( i );
-                String basePath = fullPath.substring( 0, firstIdx );
+
+                // be defensive in case the first param is optional...
+                String basePath = ( firstIdx > 0 ) ? fullPath.substring( 0, firstIdx ) : fullPath;
 
                 if ( basePath.endsWith( "/" ) )
                 {
