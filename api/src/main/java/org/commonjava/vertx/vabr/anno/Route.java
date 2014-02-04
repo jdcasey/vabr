@@ -21,12 +21,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.commonjava.vertx.vabr.BindingType;
 import org.commonjava.vertx.vabr.Method;
 
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface Route
 {
+
+    String routeKey() default "";
 
     String value() default "";
 
@@ -37,5 +40,7 @@ public @interface Route
     Method method() default Method.GET;
 
     String contentType() default "";
+
+    BindingType binding() default BindingType.body_handler;
 
 }

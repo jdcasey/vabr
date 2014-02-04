@@ -17,10 +17,12 @@
 package org.commonjava.vertx.vabr;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
+import org.commonjava.vertx.vabr.util.AppPrefixComparator;
 import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
@@ -70,6 +72,8 @@ public class MultiApplicationRouter
         {
             this.routers.add( router );
         }
+
+        Collections.sort( this.routers, new AppPrefixComparator() );
     }
 
     @Override
@@ -132,12 +136,12 @@ public class MultiApplicationRouter
         }
         finally
         {
-            if ( !request.trackingResponse()
-                         .isEnded() )
-            {
-                request.trackingResponse()
-                       .end();
-            }
+            //            if ( !request.trackingResponse()
+            //                         .isEnded() )
+            //            {
+            //                request.trackingResponse()
+            //                       .end();
+            //            }
         }
     }
 

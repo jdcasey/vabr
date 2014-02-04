@@ -170,7 +170,7 @@ public class TrackingRequest
 
     public TrackingResponse trackingResponse()
     {
-        return response;
+        return (TrackingResponse) response();
     }
 
 }

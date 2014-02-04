@@ -83,65 +83,77 @@ public class ApplicationRouter
 
     public void bindFilters( final Iterable<?> handlers, final Iterable<FilterCollection> filterCollections )
     {
-        for ( final Object handler : handlers )
+        if ( handlers != null )
         {
-            final String key = getHandlerKey( handler.getClass() );
-            if ( this.handlers.containsKey( key ) )
+            for ( final Object handler : handlers )
             {
-                continue;
-            }
-
-            logger.info( "Handlers += %s (%s)", key, handler.getClass()
-                                                            .getName() );
-            this.handlers.put( key, handler );
-        }
-
-        for ( final FilterCollection fc : filterCollections )
-        {
-            logger.info( "Binding filters in collection: %s", fc.getClass()
-                                                                .getName() );
-
-            for ( final FilterBinding fb : fc )
-            {
-                if ( !this.handlers.containsKey( fb.getHandlerKey() ) )
+                final String key = getHandlerKey( handler.getClass() );
+                if ( this.handlers.containsKey( key ) )
                 {
-                    logger.error( "Route handler '%s' not found for binding: %s", fb.getHandlerKey(), fb );
+                    continue;
                 }
 
-                bind( fb );
+                logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                                                                .getName() );
+                this.handlers.put( key, handler );
+            }
+        }
+
+        if ( filterCollections != null )
+        {
+            for ( final FilterCollection fc : filterCollections )
+            {
+                logger.info( "Binding filters in collection: %s", fc.getClass()
+                                                                    .getName() );
+
+                for ( final FilterBinding fb : fc )
+                {
+                    if ( !this.handlers.containsKey( fb.getHandlerKey() ) )
+                    {
+                        logger.error( "Route handler '%s' not found for binding: %s", fb.getHandlerKey(), fb );
+                    }
+
+                    bind( fb );
+                }
             }
         }
     }
 
     public void bindRoutes( final Iterable<?> handlers, final Iterable<RouteCollection> routeCollections )
     {
-        for ( final Object handler : handlers )
+        if ( handlers != null )
         {
-            final String key = getHandlerKey( handler.getClass() );
-            if ( this.handlers.containsKey( key ) )
+            for ( final Object handler : handlers )
             {
-                continue;
-            }
-
-            logger.info( "Handlers += %s (%s)", key, handler.getClass()
-                                                            .getName() );
-            this.handlers.put( key, handler );
-        }
-
-        for ( final RouteCollection rc : routeCollections )
-        {
-            logger.info( "Binding routes in collection: %s", rc.getClass()
-                                                               .getName() );
-
-            for ( final RouteBinding rb : rc )
-            {
-                if ( !this.handlers.containsKey( rb.getHandlerKey() ) )
+                final String key = getHandlerKey( handler.getClass() );
+                if ( this.handlers.containsKey( key ) )
                 {
-                    logger.error( "Route handler '%s' not found for binding: %s", rb.getHandlerKey(), rb );
+                    continue;
                 }
 
-                logger.info( "Routes += %s (%s)", rb.getPath(), rb.getMethod() );
-                bind( rb );
+                logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                                                                .getName() );
+                this.handlers.put( key, handler );
+            }
+        }
+
+        if ( routeCollections != null )
+        {
+            for ( final RouteCollection rc : routeCollections )
+            {
+                logger.info( "Binding routes in collection: %s", rc.getClass()
+                                                                   .getName() );
+
+                for ( final RouteBinding rb : rc )
+                {
+                    if ( !this.handlers.containsKey( rb.getHandlerKey() ) )
+                    {
+                        logger.error( "Route handler '%s' not found for binding: %s", rb.getHandlerKey(), rb );
+                    }
+
+                    logger.info( "Routes += %s (%s)", rb.getPath(), rb.getMethod() );
+                    bind( rb );
+                }
             }
         }
     }
@@ -186,12 +198,12 @@ public class ApplicationRouter
         }
         finally
         {
-            if ( !request.trackingResponse()
-                         .isEnded() )
-            {
-                request.trackingResponse()
-                       .end();
-            }
+            //            if ( !request.trackingResponse()
+            //                         .isEnded() )
+            //            {
+            //                request.trackingResponse()
+            //                       .end();
+            //            }
         }
     }
 
