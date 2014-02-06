@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.types.Method;
 
 @Target( { ElementType.METHOD } )
 @Retention( RetentionPolicy.RUNTIME )

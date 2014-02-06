@@ -1,4 +1,4 @@
-package org.commonjava.vertx.vabr;
+package org.commonjava.vertx.vabr.types;
 
 public enum BuiltInParam
 {

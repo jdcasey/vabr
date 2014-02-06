@@ -19,12 +19,13 @@ package org.commonjava.vertx.vabr;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
 import org.commonjava.vertx.vabr.util.AppPrefixComparator;
 import org.commonjava.vertx.vabr.util.RouterUtils;
-import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -40,9 +41,17 @@ public class MultiApplicationRouter
 
     private NoMatchHandler noMatchHandler;
 
+    private ExecutorService executor;
+
     public MultiApplicationRouter()
     {
         this.prefix = null;
+        this.routers = new ArrayList<>();
+    }
+
+    public MultiApplicationRouter( final String prefix )
+    {
+        this.prefix = prefix;
         this.routers = new ArrayList<>();
     }
 
@@ -53,12 +62,6 @@ public class MultiApplicationRouter
         bindRouters( routers );
     }
 
-    public MultiApplicationRouter( final String prefix )
-    {
-        this.prefix = prefix;
-        this.routers = new ArrayList<>();
-    }
-
     public MultiApplicationRouter( final String prefix, final Iterable<ApplicationRouter> routers )
     {
         this.prefix = prefix;
@@ -66,20 +69,66 @@ public class MultiApplicationRouter
         bindRouters( routers );
     }
 
+    public MultiApplicationRouter( final ExecutorService executor )
+    {
+        this.executor = executor;
+        this.prefix = null;
+        this.routers = new ArrayList<>();
+    }
+
+    public MultiApplicationRouter( final String prefix, final ExecutorService executor )
+    {
+        this.prefix = prefix;
+        this.executor = executor;
+        this.routers = new ArrayList<>();
+    }
+
+    public MultiApplicationRouter( final Iterable<ApplicationRouter> routers, final ExecutorService executor )
+    {
+        this.executor = executor;
+        this.prefix = null;
+        this.routers = new ArrayList<>();
+        bindRouters( routers );
+    }
+
+    public MultiApplicationRouter( final String prefix, final Iterable<ApplicationRouter> routers, final ExecutorService executor )
+    {
+        this.prefix = prefix;
+        this.executor = executor;
+        this.routers = new ArrayList<>();
+        bindRouters( routers );
+    }
+
+    public void setRawHandlerExecutor( final ExecutorService executor )
+    {
+        this.executor = executor;
+    }
+
+    public synchronized ExecutorService getRawHandlerExecutor()
+    {
+        if ( executor == null )
+        {
+            executor = Executors.newCachedThreadPool();
+        }
+
+        return executor;
+    }
+
     protected void bindRouters( final Iterable<? extends ApplicationRouter> routers )
     {
         for ( final ApplicationRouter router : routers )
         {
             this.routers.add( router );
+            router.setRawHandlerExecutor( executor );
         }
 
         Collections.sort( this.routers, new AppPrefixComparator() );
     }
 
     @Override
-    public void handle( final HttpServerRequest r )
+    public void handle( final HttpServerRequest request )
     {
-        final TrackingRequest request = new TrackingRequest( r );
+        request.pause();
         try
         {
             String path = request.path();
@@ -133,15 +182,6 @@ public class MultiApplicationRouter
                    .setChunked( true )
                    .write( "Error occurred during processing. See logs for more information." )
                    .end();
-        }
-        finally
-        {
-            //            if ( !request.trackingResponse()
-            //                         .isEnded() )
-            //            {
-            //                request.trackingResponse()
-            //                       .end();
-            //            }
         }
     }
 

@@ -1,7 +1,7 @@
 package ${pkg};
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
-import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.types.Method;
 import org.commonjava.vertx.vabr.filter.ExecutionChain;
 import org.commonjava.vertx.vabr.filter.FilterBinding;
 import org.commonjava.vertx.vabr.filter.AbstractFilterCollection;

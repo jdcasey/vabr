@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,8 +38,9 @@ import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
 import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
 import org.commonjava.vertx.vabr.route.RouteBinding;
 import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.types.BuiltInParam;
+import org.commonjava.vertx.vabr.types.Method;
 import org.commonjava.vertx.vabr.util.RouterUtils;
-import org.commonjava.vertx.vabr.util.TrackingRequest;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -59,9 +62,28 @@ public class ApplicationRouter
 
     private String prefix;
 
+    private ExecutorService executor;
+
     public ApplicationRouter()
     {
         this.prefix = null;
+    }
+
+    public ApplicationRouter( final ExecutorService executor )
+    {
+        this.executor = executor;
+        this.prefix = null;
+    }
+
+    public ApplicationRouter( final String prefix )
+    {
+        this.prefix = prefix;
+    }
+
+    public ApplicationRouter( final String prefix, final ExecutorService executor )
+    {
+        this.prefix = prefix;
+        this.executor = executor;
     }
 
     public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
@@ -70,15 +92,40 @@ public class ApplicationRouter
         bindRoutes( routes, routeCollections );
     }
 
-    public ApplicationRouter( final String prefix )
+    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections, final ExecutorService executor )
     {
-        this.prefix = prefix;
+        this.executor = executor;
+        this.prefix = null;
+        bindRoutes( routes, routeCollections );
     }
 
     public ApplicationRouter( final String prefix, final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = prefix;
         bindRoutes( routes, routeCollections );
+    }
+
+    public ApplicationRouter( final String prefix, final Iterable<?> routes, final Iterable<RouteCollection> routeCollections,
+                              final ExecutorService executor )
+    {
+        this.prefix = prefix;
+        this.executor = executor;
+        bindRoutes( routes, routeCollections );
+    }
+
+    public void setRawHandlerExecutor( final ExecutorService executor )
+    {
+        this.executor = executor;
+    }
+
+    public synchronized ExecutorService getRawHandlerExecutor()
+    {
+        if ( executor == null )
+        {
+            executor = Executors.newCachedThreadPool();
+        }
+
+        return executor;
     }
 
     public void bindFilters( final Iterable<?> handlers, final Iterable<FilterCollection> filterCollections )
@@ -165,9 +212,9 @@ public class ApplicationRouter
     }
 
     @Override
-    public void handle( final HttpServerRequest r )
+    public void handle( final HttpServerRequest request )
     {
-        final TrackingRequest request = new TrackingRequest( r );
+        request.pause();
         try
         {
             if ( !routeRequest( request.path(), request ) )
@@ -195,15 +242,6 @@ public class ApplicationRouter
                    .setStatusMessage( "Internal Server Error" )
                    .setChunked( true )
                    .write( "Error occurred during processing. See logs for more information." );
-        }
-        finally
-        {
-            //            if ( !request.trackingResponse()
-            //                         .isEnded() )
-            //            {
-            //                request.trackingResponse()
-            //                       .end();
-            //            }
         }
     }
 

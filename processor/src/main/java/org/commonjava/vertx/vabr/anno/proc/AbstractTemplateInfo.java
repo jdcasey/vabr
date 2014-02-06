@@ -21,8 +21,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
-import org.commonjava.vertx.vabr.Method;
 import org.commonjava.vertx.vabr.anno.Handles;
+import org.commonjava.vertx.vabr.types.Method;
 import org.commonjava.vertx.vabr.util.AnnotationUtils;
 
 public abstract class AbstractTemplateInfo

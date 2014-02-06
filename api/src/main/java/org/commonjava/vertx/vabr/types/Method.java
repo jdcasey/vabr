@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package org.commonjava.vertx.vabr;
+package org.commonjava.vertx.vabr.types;
 
 public enum Method
 {
@@ -35,6 +35,18 @@ public enum Method
     CONNECT,
 
     PATCH,
+
+    PROPFIND,
+
+    PROPPATCH,
+
+    COPY,
+
+    MOVE,
+
+    LOCK,
+
+    UNLOCK,
 
     ANY;
 

@@ -17,7 +17,7 @@
 package org.commonjava.vertx.vabr.route;
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
-import org.commonjava.vertx.vabr.Method;
+import org.commonjava.vertx.vabr.types.Method;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public abstract class RouteBinding

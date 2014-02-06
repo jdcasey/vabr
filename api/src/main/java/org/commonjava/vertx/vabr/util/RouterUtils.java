@@ -24,10 +24,10 @@ public final class RouterUtils
             }
         }
 
-        if ( path.length() < 1 )
-        {
-            path = "/";
-        }
+        //        if ( path.length() < 1 )
+        //        {
+        //            path = "/";
+        //        }
 
         return path;
     }
