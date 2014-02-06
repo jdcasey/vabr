@@ -210,8 +210,6 @@ public class VertXInputStream
                 return;
             }
         }
-
-        System.out.println( "DRAIN DONE" );
     }
 
 }
