@@ -17,6 +17,7 @@
 package org.commonjava.vertx.vabr;
 
 import static org.commonjava.vertx.vabr.util.AnnotationUtils.getHandlerKey;
+import static org.commonjava.vertx.vabr.util.RouterUtils.requestUri;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -288,23 +289,31 @@ public class ApplicationRouter
         final Map<String, String> params = new HashMap<>( matcher.groupCount() );
 
         final String fullPath = request.path();
+        final String uri = requestUri( request );
 
         final PatternRouteBinding routeBinding = ctx.getRouteBinding();
         final List<String> paramNames = routeBinding.getParamNames();
         final RouteBinding handler = routeBinding.getHandler();
 
-        final Handles pp = handler.getMethod()
-                                  .getDeclaringClass()
+        final Handles pp = handler.getHandlesClass()
                                   .getAnnotation( Handles.class );
         if ( pp != null )
         {
-            final String pathPrefix = pp.value();
+            String pathPrefix = pp.value();
+            if ( pathPrefix.length() < 1 )
+            {
+                pathPrefix = pp.prefix();
+            }
+
             int idx = fullPath.indexOf( pathPrefix );
             if ( idx > -1 )
             {
                 idx += pathPrefix.length();
                 final String prefix = fullPath.substring( 0, idx );
                 params.put( BuiltInParam._classBase.key(), prefix );
+
+                idx = uri.indexOf( pathPrefix );
+                params.put( BuiltInParam._classContextUrl.key(), uri.substring( 0, idx ) );
             }
         }
 
@@ -326,6 +335,9 @@ public class ApplicationRouter
                 }
 
                 params.put( BuiltInParam._routeBase.key(), basePath );
+
+                final int idx = uri.indexOf( basePath ) + basePath.length();
+                params.put( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
             }
 
             for ( final String param : paramNames )

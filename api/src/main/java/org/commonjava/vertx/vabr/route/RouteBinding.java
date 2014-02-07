@@ -35,14 +35,24 @@ public abstract class RouteBinding
 
     private final String handlerKey;
 
-    protected RouteBinding( final int priority, final String path, final Method method, final String contentType, final String handlerKey )
+    private final Class<?> handlesClass;
+
+    private final String handlesMethodName;
+
+    protected RouteBinding( final int priority, final String path, final Method method, final String contentType, final String handlerKey,
+                            final Class<?> handlesClass, final String handlesMethodName )
     {
         this.priority = priority;
         this.path = path;
         this.method = method;
         this.handlerKey = handlerKey;
+        this.handlesClass = handlesClass;
+        this.handlesMethodName = handlesMethodName;
         this.contentType = contentType.length() < 1 ? null : contentType;
     }
+
+    protected abstract void dispatch( ApplicationRouter router, HttpServerRequest req )
+        throws Exception;
 
     public int getPriority()
     {
@@ -87,7 +97,14 @@ public abstract class RouteBinding
         dispatch( router, req );
     }
 
-    protected abstract void dispatch( ApplicationRouter router, HttpServerRequest req )
-        throws Exception;
+    public Class<?> getHandlesClass()
+    {
+        return handlesClass;
+    }
+
+    public String getHandlesMethodName()
+    {
+        return handlesMethodName;
+    }
 
 }

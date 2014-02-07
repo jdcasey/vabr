@@ -64,7 +64,12 @@ public final class AnnotationUtils
         final StringBuilder sb = new StringBuilder();
         if ( handles != null )
         {
-            String pfx = handles.prefix();
+            String pfx = handles.value();
+            if ( pfx.length() < 1 )
+            {
+                pfx = handles.prefix();
+            }
+
             if ( pfx.endsWith( "/" ) )
             {
                 pfx = pfx.substring( 0, pfx.length() - 1 );

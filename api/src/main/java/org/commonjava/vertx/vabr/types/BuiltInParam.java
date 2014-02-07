@@ -3,7 +3,7 @@ package org.commonjava.vertx.vabr.types;
 public enum BuiltInParam
 {
 
-    _classBase, _routeBase;
+    _classContextUrl, _classBase, _routeContextUrl, _routeBase;
 
     private String key;
 
