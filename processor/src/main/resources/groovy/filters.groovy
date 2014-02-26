@@ -10,6 +10,7 @@ import org.vertx.java.core.http.HttpServerRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
 
@@ -30,7 +31,7 @@ public final class ${className}
                 ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
                 if ( handler != null )
                 {
-                    logger.debug( "Filtering via: {}", handler );
+                    logger.debug( "Filtering via: " + handler );
                     handler.${it.methodname}( req, chain );
                 }
                 else

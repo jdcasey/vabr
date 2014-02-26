@@ -1,6 +1,4 @@
-package ${import com.hazelcast.logging.LoggerFactory;
-
-pkg};
+package ${pkg};
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
 import org.commonjava.vertx.vabr.types.Method;
@@ -13,6 +11,7 @@ import org.vertx.java.core.http.HttpServerRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
 
@@ -83,7 +82,7 @@ public final class ${className}
         
         public void run()
         {
-            logger.debug( "Handling via: {}", handler );
+            logger.debug( "Handling via: " + handler );
             
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
@@ -163,7 +162,7 @@ public final class ${className}
             }
             
             request.pause();
-            logger.info( "Handling via: {}", handler );
+            logger.info( "Handling via: " + handler );
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
     }
