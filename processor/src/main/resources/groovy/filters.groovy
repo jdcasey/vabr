@@ -8,7 +8,8 @@ import org.commonjava.vertx.vabr.filter.AbstractFilterCollection;
 
 import org.vertx.java.core.http.HttpServerRequest;
 
-import org.commonjava.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
 
@@ -17,7 +18,7 @@ public final class ${className}
     extends AbstractFilterCollection
 {
 
-    private final Logger logger = new Logger( getClass() );
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     public ${className}()
     {<% templates.each { %>
@@ -29,7 +30,7 @@ public final class ${className}
                 ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
                 if ( handler != null )
                 {
-                    logger.debug( "Filtering via: %s", handler );
+                    logger.debug( "Filtering via: {}", handler );
                     handler.${it.methodname}( req, chain );
                 }
                 else

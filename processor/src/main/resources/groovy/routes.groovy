@@ -1,4 +1,6 @@
-package ${pkg};
+package ${import com.hazelcast.logging.LoggerFactory;
+
+pkg};
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
 import org.commonjava.vertx.vabr.types.Method;
@@ -9,7 +11,8 @@ import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpServerRequest;
 
-import org.commonjava.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
 
@@ -42,7 +45,7 @@ public final class ${className}
     public static final class RawBinding_${it.classname}_${it.methodname}_${it.routeKey}
         extends RouteBinding
     {
-        private final Logger logger = new Logger( getClass() );
+        private final Logger logger = LoggerFactory.getLogger( getClass() );
 
         public RawBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
@@ -66,7 +69,7 @@ public final class ${className}
     public static final class RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}
         implements Runnable
     {
-        private final Logger logger = new Logger( getClass() );
+        private final Logger logger = LoggerFactory.getLogger( getClass() );
         
         private final ${it.qualifiedClassname} handler;
         
@@ -80,7 +83,7 @@ public final class ${className}
         
         public void run()
         {
-            logger.debug( "Handling via: %s", handler );
+            logger.debug( "Handling via: {}", handler );
             
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
@@ -93,7 +96,7 @@ public final class ${className}
     public static final class BodyBinding_${it.classname}_${it.methodname}_${it.routeKey}
         extends RouteBinding
     {
-        private final Logger logger = new Logger( getClass() );
+        private final Logger logger = LoggerFactory.getLogger( getClass() );
     
         public BodyBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
@@ -117,7 +120,7 @@ public final class ${className}
     public static final class BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}
         implements Handler<Buffer>, Runnable
     {
-        private final Logger logger = new Logger( getClass() );
+        private final Logger logger = LoggerFactory.getLogger( getClass() );
     
         private final ${it.qualifiedClassname} handler;
         
@@ -160,7 +163,7 @@ public final class ${className}
             }
             
             request.pause();
-            logger.info( "Handling via: %s", handler );
+            logger.info( "Handling via: {}", handler );
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
     }
