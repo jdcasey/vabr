@@ -129,18 +129,38 @@ public final class ${className}
         {
             this.handler = handler;
             this.request = request;
+            logger.info( "Attaching this as body handler.");
             request.bodyHandler( this );
+            request.resume();
         }
         
-        public void handle( Buffer body )
+        public synchronized void handle( Buffer body )
         {
             request.pause();
+            logger.info( "Got request body.");
             this.body = body;
         }
         
         public void run()
         {
-            logger.debug( "Handling via: %s", handler );
+            synchronized( this )
+            {
+                while( body == null )
+                {
+                    try
+                    {
+                        wait(100);
+                    }
+                    catch( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
+            
+            request.pause();
+            logger.info( "Handling via: %s", handler );
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
     }
