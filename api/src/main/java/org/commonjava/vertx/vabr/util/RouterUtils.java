@@ -1,6 +1,7 @@
 package org.commonjava.vertx.vabr.util;
 
-import org.commonjava.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public final class RouterUtils
@@ -48,7 +49,8 @@ public final class RouterUtils
             }
             else
             {
-                new Logger( RouterUtils.class ).info( "Trimming off: '%s'", path.substring( 0, prefix.length() ) );
+                final Logger logger = LoggerFactory.getLogger( RouterUtils.class );
+                logger.info( "Trimming off: '{}'", path.substring( 0, prefix.length() ) );
                 path = path.substring( prefix.length() );
             }
         }

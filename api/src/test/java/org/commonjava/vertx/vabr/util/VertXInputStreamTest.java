@@ -30,12 +30,10 @@ import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
-import org.commonjava.util.logging.Log4jUtil;
-import org.commonjava.util.logging.Logger;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.Vertx;
@@ -53,15 +51,9 @@ public class VertXInputStreamTest
 
     private static final String BASE = VertXInputStream.class.getSimpleName();
 
-    private final Logger logger = new Logger( getClass() );
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private int port;
-
-    @BeforeClass
-    public static void setupClass()
-    {
-        Log4jUtil.configure( Level.DEBUG );
-    }
 
     @Before
     public void setup()
@@ -120,7 +112,7 @@ public class VertXInputStreamTest
             @Override
             public void handle( final HttpClientResponse response )
             {
-                logger.info( "Response: %s %s", response.statusCode(), response.statusMessage() );
+                logger.info( "Response: {} {}", response.statusCode(), response.statusMessage() );
             }
         } );
 
@@ -139,7 +131,7 @@ public class VertXInputStreamTest
            .write( new Buffer( check.toByteArray() ) )
            .end();
 
-        logger.info( "SENT: " + check.toByteArray().length );
+        logger.info( "SENT: {}", check.toByteArray().length );
 
         synchronized ( result )
         {
@@ -155,7 +147,7 @@ public class VertXInputStreamTest
         {
             if ( resultArry[i] != checkedArry[i] )
             {
-                logger.error( "Index %d mismatch! Was: %h, expected: %h", i, resultArry[i], checkedArry[i] );
+                logger.error( "Index {} mismatch! Was: {}, expected: {}", i, resultArry[i], checkedArry[i] );
                 match = false;
             }
         }

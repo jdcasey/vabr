@@ -26,10 +26,7 @@ import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
-import org.commonjava.util.logging.Log4jUtil;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -47,12 +44,6 @@ public class VertXOutputStreamTest
     public TemporaryFolder temp = new TemporaryFolder();
 
     private File tempFolder;
-
-    @BeforeClass
-    public static void setupClass()
-    {
-        Log4jUtil.configure( Level.DEBUG );
-    }
 
     @Before
     public void tempFolder()

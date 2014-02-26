@@ -22,10 +22,11 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
 import org.commonjava.vertx.vabr.util.AppPrefixComparator;
 import org.commonjava.vertx.vabr.util.RouterUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -33,7 +34,7 @@ public class MultiApplicationRouter
     implements Handler<HttpServerRequest>
 {
 
-    protected final Logger logger = new Logger( getClass() );
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final String prefix;
 
@@ -144,7 +145,7 @@ public class MultiApplicationRouter
             {
                 for ( final ApplicationRouter router : routers )
                 {
-                    logger.info( "attempting to route '%s' via: %s", path, router );
+                    logger.info( "attempting to route '{}' via: {}", path, router );
                     if ( router.routeRequest( path, request ) )
                     {
                         found = true;
@@ -175,7 +176,7 @@ public class MultiApplicationRouter
         }
         catch ( final Throwable t )
         {
-            logger.error( "ERROR: %s", t, t.getMessage() );
+            logger.error( "ERROR: {}", t, t.getMessage() );
             request.response()
                    .setStatusCode( 500 )
                    .setStatusMessage( "Internal Server Error" )

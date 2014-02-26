@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.filter.FilterBinding;
 import org.commonjava.vertx.vabr.filter.FilterCollection;
@@ -42,6 +41,8 @@ import org.commonjava.vertx.vabr.route.RouteCollection;
 import org.commonjava.vertx.vabr.types.BuiltInParam;
 import org.commonjava.vertx.vabr.types.Method;
 import org.commonjava.vertx.vabr.util.RouterUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -51,7 +52,7 @@ public class ApplicationRouter
 
     private static final String PATH_SEG_PATTERN = "([^\\/]+)";
 
-    protected final Logger logger = new Logger( getClass() );
+    protected final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private Map<Method, List<PatternRouteBinding>> routeBindings = new HashMap<>();
 
@@ -141,7 +142,7 @@ public class ApplicationRouter
                     continue;
                 }
 
-                logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                logger.info( "Handlers += {} ({})", key, handler.getClass()
                                                                 .getName() );
                 this.handlers.put( key, handler );
             }
@@ -151,14 +152,14 @@ public class ApplicationRouter
         {
             for ( final FilterCollection fc : filterCollections )
             {
-                logger.info( "Binding filters in collection: %s", fc.getClass()
+                logger.info( "Binding filters in collection: {}", fc.getClass()
                                                                     .getName() );
 
                 for ( final FilterBinding fb : fc )
                 {
                     if ( !this.handlers.containsKey( fb.getHandlerKey() ) )
                     {
-                        logger.error( "Route handler '%s' not found for binding: %s", fb.getHandlerKey(), fb );
+                        logger.error( "Route handler '{}' not found for binding: {}", fb.getHandlerKey(), fb );
                     }
 
                     bind( fb );
@@ -179,7 +180,7 @@ public class ApplicationRouter
                     continue;
                 }
 
-                logger.info( "Handlers += %s (%s)", key, handler.getClass()
+                logger.info( "Handlers += {} ({})", key, handler.getClass()
                                                                 .getName() );
                 this.handlers.put( key, handler );
             }
@@ -189,17 +190,17 @@ public class ApplicationRouter
         {
             for ( final RouteCollection rc : routeCollections )
             {
-                logger.info( "Binding routes in collection: %s", rc.getClass()
+                logger.info( "Binding routes in collection: {}", rc.getClass()
                                                                    .getName() );
 
                 for ( final RouteBinding rb : rc )
                 {
                     if ( !this.handlers.containsKey( rb.getHandlerKey() ) )
                     {
-                        logger.error( "Route handler '%s' not found for binding: %s", rb.getHandlerKey(), rb );
+                        logger.error( "Route handler '{}' not found for binding: {}", rb.getHandlerKey(), rb );
                     }
 
-                    logger.info( "Routes += %s (%s)", rb.getPath(), rb.getMethod() );
+                    logger.info( "Routes += {} ({})", rb.getPath(), rb.getMethod() );
                     bind( rb );
                 }
             }
@@ -237,7 +238,7 @@ public class ApplicationRouter
         }
         catch ( final Throwable t )
         {
-            logger.error( "ERROR: %s", t, t.getMessage() );
+            logger.error( "ERROR: {}", t, t.getMessage() );
             request.response()
                    .setStatusCode( 500 )
                    .setStatusMessage( "Internal Server Error" )
@@ -249,7 +250,7 @@ public class ApplicationRouter
     public boolean routeRequest( String path, final HttpServerRequest request )
         throws Exception
     {
-        logger.info( "Originating path: %s", path );
+        logger.info( "Originating path: {}", path );
         path = RouterUtils.trimPrefix( prefix, path );
         if ( path == null )
         {
@@ -258,7 +259,7 @@ public class ApplicationRouter
 
         final Method method = Method.valueOf( request.method() );
 
-        logger.info( "REQUEST>>> %s %s\n", method, path );
+        logger.info( "REQUEST>>> {} {}\n", method, path );
 
         BindingContext ctx = findBinding( method, path );
 
@@ -272,7 +273,7 @@ public class ApplicationRouter
             final RouteBinding handler = ctx.getRouteBinding()
                                             .getHandler();
             // FIXME Wrap this in an executor that knows about filters AND the fundamental route...
-            logger.info( "MATCH: %s\n", handler );
+            logger.info( "MATCH: {}\n", handler );
             parseParams( ctx, request );
 
             new ExecutionChainHandler( this, ctx, request ).execute();
@@ -345,7 +346,7 @@ public class ApplicationRouter
                 final String v = matcher.group( i );
                 if ( v != null )
                 {
-                    logger.info( "PARAM %s = %s", param, v );
+                    logger.info( "PARAM {} = {}", param, v );
                     params.put( param, v );
                 }
                 i++;
@@ -359,7 +360,7 @@ public class ApplicationRouter
                 final String v = matcher.group( i + 1 );
                 if ( v != null )
                 {
-                    logger.info( "PARAM param%s = %s", i, v );
+                    logger.info( "PARAM param{} = {}", i, v );
                     params.put( "param" + i, v );
                 }
             }
@@ -383,7 +384,7 @@ public class ApplicationRouter
             }
         }
 
-        //        logger.info( "PARAMS: %s\n", params );
+        //        logger.info( "PARAMS: {}\n", params );
         request.params()
                .set( params );
     }
@@ -408,7 +409,7 @@ public class ApplicationRouter
         }
 
         final List<PatternRouteBinding> routeBindings = this.routeBindings.get( method );
-        //        logger.info( "Available bindings:\n  %s\n", join( bindings, "\n  " ) );
+        //        logger.info( "Available bindings:\n  {}\n", join( bindings, "\n  " ) );
         if ( routeBindings != null )
         {
             for ( final PatternRouteBinding binding : routeBindings )
@@ -442,7 +443,7 @@ public class ApplicationRouter
             routeBindings.put( method, b );
         }
 
-        logger.info( "ADD Method: %s, Pattern: %s, Route: %s\n", method, path, handler );
+        logger.info( "ADD Method: {}, Pattern: {}, Route: {}\n", method, path, handler );
         addPattern( path, handler, b );
     }
 
@@ -463,7 +464,7 @@ public class ApplicationRouter
             filterBindings.put( method, b );
         }
 
-        logger.info( "ADD Method: %s, Pattern: %s, Filter: %s\n", method, path, handler );
+        logger.info( "ADD Method: {}, Pattern: {}, Filter: {}\n", method, path, handler );
         List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
         if ( allFilterBindings == null )
         {
@@ -549,7 +550,7 @@ public class ApplicationRouter
         m.appendTail( sb );
         final String regex = sb.toString();
 
-        //        logger.info( "BIND regex: %s, groups: %s, route: %s\n", regex, groups, handler );
+        //        logger.info( "BIND regex: {}, groups: {}, route: {}\n", regex, groups, handler );
 
         final PatternRouteBinding binding = new PatternRouteBinding( Pattern.compile( regex ), groups, handler );
         bindings.add( binding );

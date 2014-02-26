@@ -1,7 +1,8 @@
 package org.commonjava.vertx.vabr.util;
 
-import org.commonjava.util.logging.Logger;
 import org.commonjava.vertx.vabr.anno.Handles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AnnotationUtils
 {
@@ -12,13 +13,13 @@ public final class AnnotationUtils
 
     public static String getHandlerKey( final Class<?> cls )
     {
-        final Logger logger = new Logger( AnnotationUtils.class );
+        final Logger logger = LoggerFactory.getLogger( AnnotationUtils.class );
 
         Class<?> c = cls;
         Handles anno = null;
         do
         {
-            logger.info( "Searching %s for @Handles annotation...", c.getName() );
+            logger.info( "Searching {} for @Handles annotation...", c.getName() );
             anno = c.getAnnotation( Handles.class );
             if ( anno == null )
             {
@@ -33,7 +34,7 @@ public final class AnnotationUtils
         }
 
         final String key = getHandlerKey( anno, c.getName() );
-        logger.info( "Got: %s", key );
+        logger.info( "Got: {}", key );
         return key;
     }
 
