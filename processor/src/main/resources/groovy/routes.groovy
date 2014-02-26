@@ -123,24 +123,25 @@ public final class ${className}
         
         private final HttpServerRequest request;
         
+        private final Buffer body;
+        
         public BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( ${it.qualifiedClassname} handler, final HttpServerRequest request )
         {
             this.handler = handler;
             this.request = request;
-            request.pause();
             request.bodyHandler( this );
         }
         
         public void handle( Buffer body )
         {
             request.pause();
-            logger.debug( "Handling via: %s", handler );
-            handler.${it.methodname}( ${it.callParams.join(', ')} );
+            this.body = body;
         }
         
         public void run()
         {
-            request.resume();
+            logger.debug( "Handling via: %s", handler );
+            handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
     }
     <%    }
