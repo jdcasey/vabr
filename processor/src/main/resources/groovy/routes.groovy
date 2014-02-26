@@ -54,7 +54,7 @@ public final class ${className}
             ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
             if ( handler != null )
             {
-                router.getRawHandlerExecutor().execute( new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ) );
+                router.getHandlerExecutor().execute( new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ) );
             }
             else
             {
@@ -110,12 +110,12 @@ public final class ${className}
                 throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
             } 
             
-            new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request );
+            router.getHandlerExecutor().execute( new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ) );
         }
     }
     
     public static final class BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}
-        implements Handler<Buffer>
+        implements Handler<Buffer>, Runnable
     {
         private final Logger logger = new Logger( getClass() );
     
@@ -127,14 +127,20 @@ public final class ${className}
         {
             this.handler = handler;
             this.request = request;
+            request.pause();
             request.bodyHandler( this );
-            request.resume();
         }
         
         public void handle( Buffer body )
         {
+            request.pause();
             logger.debug( "Handling via: %s", handler );
             handler.${it.methodname}( ${it.callParams.join(', ')} );
+        }
+        
+        public void run()
+        {
+            request.resume();
         }
     }
     <%    }

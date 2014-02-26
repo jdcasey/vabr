@@ -99,12 +99,12 @@ public class MultiApplicationRouter
         bindRouters( routers );
     }
 
-    public void setRawHandlerExecutor( final ExecutorService executor )
+    public void setHandlerExecutor( final ExecutorService executor )
     {
         this.executor = executor;
     }
 
-    public synchronized ExecutorService getRawHandlerExecutor()
+    public synchronized ExecutorService getHandlerExecutor()
     {
         if ( executor == null )
         {
@@ -119,7 +119,7 @@ public class MultiApplicationRouter
         for ( final ApplicationRouter router : routers )
         {
             this.routers.add( router );
-            router.setRawHandlerExecutor( executor );
+            router.setHandlerExecutor( executor );
         }
 
         Collections.sort( this.routers, new AppPrefixComparator() );

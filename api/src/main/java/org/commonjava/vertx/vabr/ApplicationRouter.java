@@ -114,12 +114,12 @@ public class ApplicationRouter
         bindRoutes( routes, routeCollections );
     }
 
-    public void setRawHandlerExecutor( final ExecutorService executor )
+    public void setHandlerExecutor( final ExecutorService executor )
     {
         this.executor = executor;
     }
 
-    public synchronized ExecutorService getRawHandlerExecutor()
+    public synchronized ExecutorService getHandlerExecutor()
     {
         if ( executor == null )
         {
