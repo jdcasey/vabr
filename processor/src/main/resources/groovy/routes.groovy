@@ -123,7 +123,7 @@ public final class ${className}
         
         private final HttpServerRequest request;
         
-        private final Buffer body;
+        private Buffer body;
         
         public BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( ${it.qualifiedClassname} handler, final HttpServerRequest request )
         {
