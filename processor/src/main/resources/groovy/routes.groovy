@@ -139,7 +139,7 @@ public final class ${className}
         public synchronized void handle( Buffer body )
         {
             request.pause();
-            logger.info( "Got request body.");
+            logger.debug( "Got request body.");
             this.body = body;
         }
         
@@ -162,7 +162,7 @@ public final class ${className}
             }
             
             request.pause();
-            logger.info( "Handling via: " + handler );
+            logger.debug( "Handling via: " + handler );
             handler.${it.methodname}( ${it.callParams.join(', ')} );
         }
     }
