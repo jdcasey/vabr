@@ -11,6 +11,8 @@ import org.commonjava.vertx.vabr.types.Method;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface FilterRoute
 {
+    String apiVersion() default Handles.DEFAULT_API_VERSION;
+
     String value() default "";
 
     String path() default "";

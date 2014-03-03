@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target( { ElementType.TYPE } )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface Handles
+public @interface HandlesVersion
 {
     String DEFAULT_API_VERSION = "0.0";
 
@@ -18,6 +18,4 @@ public @interface Handles
     String value() default "";
 
     String key() default "";
-
-    HandlesVersion[] versions() default {};
 }

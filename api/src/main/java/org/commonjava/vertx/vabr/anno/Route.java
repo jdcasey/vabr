@@ -29,6 +29,8 @@ import org.commonjava.vertx.vabr.types.Method;
 public @interface Route
 {
 
+    String apiVersion() default Handles.DEFAULT_API_VERSION;
+
     String routeKey() default "";
 
     String value() default "";
