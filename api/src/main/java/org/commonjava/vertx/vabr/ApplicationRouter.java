@@ -44,8 +44,6 @@ public class ApplicationRouter
     implements Handler<HttpServerRequest>
 {
 
-    private static final String PATH_SEG_PATTERN = "([^\\/]+)";
-
     protected final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private Map<Method, List<PatternRouteBinding>> routeBindings = new HashMap<>();
@@ -408,7 +406,7 @@ public class ApplicationRouter
         {
             for ( final PatternRouteBinding binding : routeBindings )
             {
-                final Matcher m = binding.getPattern()
+                final Matcher m = Pattern.compile( binding.getPattern() )
                                          .matcher( path );
                 if ( m.matches() )
                 {
@@ -498,55 +496,8 @@ public class ApplicationRouter
 
     protected void addPattern( final String input, final RouteBinding handler, final List<PatternRouteBinding> bindings )
     {
-        // input is /:name/:path=(.+)/:page
-        // route pattern is: /([^\\/]+)/(.+)/([^\\/]+)
-        // group list is: [name, path, page], where index+1 == regex-group-number
-
-        // We need to search for any :<token name> tokens in the String and replace them with named capture groups
-        final Matcher m = Pattern.compile( ":(\\??[A-Za-z][A-Za-z0-9_]*)(=\\([^)]+\\))?" )
-                                 .matcher( input );
-        final StringBuffer sb = new StringBuffer();
-        final List<String> groups = new ArrayList<>();
-        while ( m.find() )
-        {
-            String group = m.group( 1 );
-            boolean optional = false;
-            if ( group.startsWith( "?" ) )
-            {
-                group = group.substring( 1 );
-                optional = true;
-            }
-
-            String pattern = m.group( 2 );
-            if ( pattern == null )
-            {
-                pattern = PATH_SEG_PATTERN;
-            }
-            else
-            {
-                pattern = pattern.substring( 1 );
-            }
-
-            if ( optional )
-            {
-                pattern += "?";
-            }
-
-            if ( groups.contains( group ) )
-            {
-                throw new IllegalArgumentException( "Cannot use identifier " + group + " more than once in pattern string" );
-            }
-
-            m.appendReplacement( sb, pattern );
-
-            groups.add( group );
-        }
-        m.appendTail( sb );
-        final String regex = sb.toString();
-
         //        logger.info( "BIND regex: {}, groups: {}, route: {}\n", regex, groups, handler );
-
-        final PatternRouteBinding binding = new PatternRouteBinding( Pattern.compile( regex ), groups, handler );
+        final PatternRouteBinding binding = PatternRouteBinding.parse( input, handler );
         bindings.add( binding );
 
         Collections.sort( bindings );
