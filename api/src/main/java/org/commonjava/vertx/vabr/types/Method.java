@@ -42,6 +42,8 @@ public enum Method
 
     UNLOCK,
 
+    USERINFO,
+
     ANY;
 
 }
