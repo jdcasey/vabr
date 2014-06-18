@@ -69,6 +69,8 @@ public class VertXInputStream
 
     private boolean done;
 
+    private final ReadStream<?> stream;
+
     public VertXInputStream( final ReadStream<?> stream )
     {
         this( stream, -1 );
@@ -76,16 +78,16 @@ public class VertXInputStream
 
     public VertXInputStream( final ReadStream<?> stream, final long contentLength )
     {
-        this.contentLength = contentLength;
         if ( stream == null )
         {
             throw new NullPointerException( "Cannot read from null stream!" );
         }
 
+        this.stream = stream;
+        this.contentLength = contentLength;
         dataHandler = new DataHandler();
         endHandler = new EndHandler();
 
-        stream.resume();
         stream.dataHandler( dataHandler );
         stream.endHandler( endHandler );
     }
@@ -94,6 +96,8 @@ public class VertXInputStream
     public int read()
         throws IOException
     {
+        stream.resume();
+
         if ( contentLength > 0 && total == contentLength )
         {
             done = true;
