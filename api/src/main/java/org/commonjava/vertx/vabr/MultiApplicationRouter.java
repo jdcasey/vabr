@@ -30,7 +30,7 @@ public class MultiApplicationRouter
 
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-    private final String prefix;
+    private String prefix;
 
     private final List<ApplicationRouter> routers;
 
@@ -178,6 +178,16 @@ public class MultiApplicationRouter
                    .write( "Error occurred during processing. See logs for more information." )
                    .end();
         }
+    }
+
+    public String getPrefix()
+    {
+        return prefix;
+    }
+
+    public void setPrefix( final String prefix )
+    {
+        this.prefix = prefix;
     }
 
 }

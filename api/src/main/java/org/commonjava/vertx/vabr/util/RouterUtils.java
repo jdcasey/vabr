@@ -53,15 +53,21 @@ public final class RouterUtils
     {
         if ( prefix != null )
         {
-            if ( !path.startsWith( prefix ) )
+            String p = prefix;
+            if ( !p.startsWith( "/" ) )
+            {
+                p = "/" + p;
+            }
+
+            if ( !path.startsWith( p ) )
             {
                 return null;
             }
             else
             {
                 final Logger logger = LoggerFactory.getLogger( RouterUtils.class );
-                logger.info( "Trimming off: '{}'", path.substring( 0, prefix.length() ) );
-                path = path.substring( prefix.length() );
+                logger.info( "Trimming off: '{}'", path.substring( 0, p.length() ) );
+                path = path.substring( p.length() );
             }
         }
 
