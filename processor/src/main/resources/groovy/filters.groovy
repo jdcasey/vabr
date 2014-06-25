@@ -32,11 +32,28 @@ public final class ${className}
                 if ( handler != null )
                 {
                     logger.debug( "Filtering via: " + handler );
-                    handler.${it.methodname}( req, chain );
+                    try
+                    {
+                        handler.${it.methodname}( req, chain );
+                    }
+                    catch ( Throwable error )
+                    {
+                        if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
+        
+                        String message = String.format( "Error executing %s. Reason: %s", this, error.getMessage() );
+                        logger.error( message );
+                        request.response().setStatusCode( 500 )
+                                          .setStatusMessage( message )
+                                          .end();
+                    }
                 }
                 else
                 {
-                    throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
+                    String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                    logger.error( message );
+                    request.response().setStatusCode( 500 )
+                                      .setStatusMessage( message )
+                                      .end();
                 } 
             }
         } );

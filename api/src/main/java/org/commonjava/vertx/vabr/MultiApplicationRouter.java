@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.commonjava.vertx.vabr.helper.NoMatchHandler;
+import org.commonjava.vertx.vabr.helper.RedirectHandler;
 import org.commonjava.vertx.vabr.util.AppPrefixComparator;
 import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.slf4j.Logger;
@@ -152,20 +153,18 @@ public class MultiApplicationRouter
 
             if ( !found )
             {
-                if ( noMatchHandler != null )
-                {
-                    noMatchHandler.handle( request );
-                }
-                else
-                {
-                    // Default 404
-                    request.response()
-                           .setStatusCode( 404 )
-                           .setStatusMessage( "Not Found" )
-                           .setChunked( true )
-                           .write( "No handler found" )
-                           .end();
-                }
+                final NoMatchHandler handler = noMatchHandler == null ? new RedirectHandler( prefix ) : noMatchHandler;
+                handler.handle( request );
+                //                else
+                //                {
+                //                    // Default 404
+                //                    request.response()
+                //                           .setStatusCode( 404 )
+                //                           .setStatusMessage( "Not Found" )
+                //                           .setChunked( true )
+                //                           .write( "No handler found" )
+                //                           .end();
+                //                }
             }
         }
         catch ( final Throwable t )

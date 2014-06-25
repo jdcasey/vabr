@@ -60,7 +60,11 @@ public final class ${className}
             }
             else
             {
-                throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
+                String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                logger.error( message );
+                request.response().setStatusCode( 500 )
+                                  .setStatusMessage( message )
+                                  .end();
             } 
         }
     }
@@ -82,9 +86,22 @@ public final class ${className}
         
         public void run()
         {
-            logger.debug( "Handling via: " + handler );
-            
-            handler.${it.methodname}( ${it.callParams.join(', ')} );
+            try
+            {
+                logger.debug( "Handling via: " + handler );
+                
+                handler.${it.methodname}( ${it.callParams.join(', ')} );
+            }
+            catch ( Throwable error )
+            {
+                if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
+        
+                String message = String.format( "Error executing %s. Reason: %s", this, error.getMessage() );
+                logger.error( message );
+                request.response().setStatusCode( 500 )
+                                  .setStatusMessage( message )
+                                  .end();
+            }
         }
     }
     <%
@@ -109,7 +126,11 @@ public final class ${className}
             
             if ( target == null )
             {
-                throw new RuntimeException( "Cannot retrieve handler instance for: " + toString() );
+                String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                logger.error( message );
+                request.response().setStatusCode( 500 )
+                                  .setStatusMessage( message )
+                                  .end();
             } 
             
             router.getHandlerExecutor().execute( new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ) );
@@ -145,25 +166,38 @@ public final class ${className}
         
         public void run()
         {
-            synchronized( this )
+            try
             {
-                while( body == null )
+                synchronized( this )
                 {
-                    try
+                    while( body == null )
                     {
-                        wait(100);
-                    }
-                    catch( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                        return;
+                        try
+                        {
+                            wait(100);
+                        }
+                        catch( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
                     }
                 }
+                
+                request.pause();
+                logger.debug( "Handling via: " + handler );
+                handler.${it.methodname}( ${it.callParams.join(', ')} );
             }
-            
-            request.pause();
-            logger.debug( "Handling via: " + handler );
-            handler.${it.methodname}( ${it.callParams.join(', ')} );
+            catch ( Throwable error )
+            {
+                if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
+        
+                String message = String.format( "Error executing %s. Reason: %s", this, error.getMessage() );
+                logger.error( message );
+                request.response().setStatusCode( 500 )
+                                  .setStatusMessage( message )
+                                  .end();
+            }
         }
     }
     <%    }
