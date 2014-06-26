@@ -40,10 +40,11 @@ public final class ${className}
                     {
                         if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
         
-                        String message = String.format( "Error executing %s. Reason: %s", this, error.getMessage() );
-                        logger.error( message );
+                        long marker = System.currentTimeMillis();
+                        String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
+                        logger.error( message, error );
                         request.response().setStatusCode( 500 )
-                                          .setStatusMessage( message )
+                                          .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                           .end();
                     }
                 }
