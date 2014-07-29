@@ -25,16 +25,18 @@ public final class ${className}
     {<% templates.each { %>
         bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}" )
         {
-            public void dispatch( ApplicationRouter router, HttpServerRequest req, ExecutionChain chain )
+            public void dispatch( ApplicationRouter router, HttpServerRequest request, ExecutionChain chain )
                 throws Exception
             {
+                request.pause();
+                
                 ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
                 if ( handler != null )
                 {
                     logger.debug( "Filtering via: " + handler );
                     try
                     {
-                        handler.${it.methodname}( req, chain );
+                        handler.${it.methodname}( request, chain );
                     }
                     catch ( Throwable error )
                     {
@@ -43,7 +45,7 @@ public final class ${className}
                         long marker = System.currentTimeMillis();
                         String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                         logger.error( message, error );
-                        request.response().setStatusCode( 500 )
+                        request.resume().response().setStatusCode( 500 )
                                           .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                           .end();
                     }
@@ -52,7 +54,7 @@ public final class ${className}
                 {
                     String message = "[VABR] Cannot retrieve handler instance for: " + toString();
                     logger.error( message );
-                    request.response().setStatusCode( 500 )
+                    request.resume().response().setStatusCode( 500 )
                                       .setStatusMessage( message )
                                       .end();
                 } 

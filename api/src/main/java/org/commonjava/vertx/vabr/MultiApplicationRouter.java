@@ -170,12 +170,12 @@ public class MultiApplicationRouter
         catch ( final Throwable t )
         {
             logger.error( "ERROR: {}", t, t.getMessage() );
-            request.response()
+            request.resume()
+                   .response()
                    .setStatusCode( 500 )
                    .setStatusMessage( "Internal Server Error" )
                    .setChunked( true )
-                   .write( "Error occurred during processing. See logs for more information." )
-                   .end();
+                   .end( "Error occurred during processing. See logs for more information." );
         }
     }
 

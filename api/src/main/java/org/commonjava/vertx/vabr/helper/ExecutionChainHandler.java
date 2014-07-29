@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr.helper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
@@ -27,7 +28,7 @@ public class ExecutionChainHandler
 
     private RouteBinding route;
 
-    private List<ExecutionChain> chains;
+    private final List<ExecutionChain> chains = new ArrayList<>();
 
     private final HttpServerRequest request;
 

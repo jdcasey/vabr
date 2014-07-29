@@ -16,8 +16,10 @@ import static org.commonjava.vertx.vabr.util.RouterUtils.requestUri;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -220,22 +222,24 @@ public class ApplicationRouter
                 else
                 {
                     // Default 404
-                    request.response()
+                    request.resume()
+                           .response()
                            .setStatusCode( 404 )
                            .setStatusMessage( "Not Found" )
                            .setChunked( true )
-                           .write( "No handler found" );
+                           .end( "No handler found" );
                 }
             }
         }
         catch ( final Throwable t )
         {
-            logger.error( "ERROR: {}", t, t.getMessage() );
-            request.response()
+            logger.error( String.format( "ERROR: %s", t.getMessage() ), t );
+            request.resume()
+                   .response()
                    .setStatusCode( 500 )
                    .setStatusMessage( "Internal Server Error" )
                    .setChunked( true )
-                   .write( "Error occurred during processing. See logs for more information." );
+                   .end( "Error occurred during processing. See logs for more information." );
         }
     }
 
@@ -457,30 +461,50 @@ public class ApplicationRouter
         }
 
         logger.info( "ADD Method: {}, Pattern: {}, Filter: {}\n", method, path, handler );
-        List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
-        if ( allFilterBindings == null )
+        final Set<Method> methods = new HashSet<>();
+        if ( method == Method.ANY )
         {
-            allFilterBindings = new ArrayList<>();
-            this.filterBindings.put( method, allFilterBindings );
-        }
-
-        boolean found = false;
-        for ( final PatternFilterBinding binding : allFilterBindings )
-        {
-            if ( binding.getPattern()
-                        .pattern()
-                        .equals( handler.getPath() ) )
+            for ( final Method m : Method.values() )
             {
-                binding.addFilter( handler );
-                found = true;
-                break;
+                if ( m != Method.ANY )
+                {
+                    methods.add( m );
+                }
             }
         }
-
-        if ( !found )
+        else
         {
-            final PatternFilterBinding binding = new PatternFilterBinding( Pattern.compile( handler.getPath() ), handler );
-            allFilterBindings.add( binding );
+            methods.add( method );
+        }
+
+        for ( final Method m : methods )
+        {
+            List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( m );
+            if ( allFilterBindings == null )
+            {
+                allFilterBindings = new ArrayList<>();
+                this.filterBindings.put( m, allFilterBindings );
+            }
+
+            boolean found = false;
+            for ( final PatternFilterBinding binding : allFilterBindings )
+            {
+                if ( binding.getPattern()
+                            .pattern()
+                            .equals( handler.getPath() ) )
+                {
+                    binding.addFilter( handler );
+                    found = true;
+                    break;
+                }
+            }
+
+            if ( !found )
+            {
+                final PatternFilterBinding binding =
+                    new PatternFilterBinding( Pattern.compile( handler.getPath() ), handler );
+                allFilterBindings.add( binding );
+            }
         }
     }
 

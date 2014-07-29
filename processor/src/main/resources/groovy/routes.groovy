@@ -53,6 +53,8 @@ public final class ${className}
         
         public void dispatch( ApplicationRouter router, HttpServerRequest request )
         {
+            request.pause();
+            
             ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
             if ( handler != null )
             {
@@ -62,7 +64,7 @@ public final class ${className}
             {
                 String message = "[VABR] Cannot retrieve handler instance for: " + toString();
                 logger.error( message );
-                request.response().setStatusCode( 500 )
+                request.resume().response().setStatusCode( 500 )
                                   .setStatusMessage( message )
                                   .end();
             } 
@@ -99,7 +101,7 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-                request.response().setStatusCode( 500 )
+                request.resume().response().setStatusCode( 500 )
                                   .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                   .end();
             }
@@ -129,7 +131,7 @@ public final class ${className}
             {
                 String message = "[VABR] Cannot retrieve handler instance for: " + toString();
                 logger.error( message );
-                request.response().setStatusCode( 500 )
+                request.resume().response().setStatusCode( 500 )
                                   .setStatusMessage( message )
                                   .end();
             } 
@@ -196,7 +198,7 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-                request.response().setStatusCode( 500 )
+                request.resume().response().setStatusCode( 500 )
                                   .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                   .end();
             }

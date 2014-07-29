@@ -17,6 +17,17 @@ public class RedirectHandler
     @Override
     public void handle( final HttpServerRequest request )
     {
+        if ( request.path()
+                    .endsWith( to ) )
+        {
+            request.resume()
+                   .response()
+                   .setStatusCode( 404 )
+                   .setStatusMessage( "Not Found" )
+                   .end();
+            return;
+        }
+
         final int code = 301;
         final String message = "Moved Permanently";
 
