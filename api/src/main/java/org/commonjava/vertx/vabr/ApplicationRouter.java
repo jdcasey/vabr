@@ -466,10 +466,7 @@ public class ApplicationRouter
         {
             for ( final Method m : Method.values() )
             {
-                if ( m != Method.ANY )
-                {
-                    methods.add( m );
-                }
+                methods.add( m );
             }
         }
         else
