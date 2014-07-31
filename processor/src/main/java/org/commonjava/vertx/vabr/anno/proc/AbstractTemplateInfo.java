@@ -10,6 +10,9 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr.anno.proc;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
@@ -38,8 +41,10 @@ public abstract class AbstractTemplateInfo
 
     private final String handlerKey;
 
-    protected AbstractTemplateInfo( final Element elem, final Handles handles, final int priority, final Method method, final String path,
-                                    final String defPath )
+    private final List<String> versions;
+
+    protected AbstractTemplateInfo( final Element elem, final Handles handles, final int priority, final Method method,
+                                    final String path, final String defPath, final String[] routeVersions )
     {
         this.priority = priority;
         this.httpMethod = method;
@@ -63,6 +68,31 @@ public abstract class AbstractTemplateInfo
                          .toString();
 
         this.handlerKey = AnnotationUtils.getHandlerKey( handles, qualifiedClassname );
+
+        this.versions = new ArrayList<>();
+        if ( routeVersions != null && routeVersions.length > 0 )
+        {
+            for ( final String rv : routeVersions )
+            {
+                this.versions.add( rv );
+            }
+        }
+        else
+        {
+            final String[] handlerVersions = handles.versions();
+            if ( handlerVersions != null )
+            {
+                for ( final String rv : handlerVersions )
+                {
+                    this.versions.add( rv );
+                }
+            }
+        }
+    }
+
+    public List<String> getVersions()
+    {
+        return versions;
     }
 
     public String getPackagename()

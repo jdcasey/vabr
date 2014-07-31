@@ -28,4 +28,6 @@ public @interface FilterRoute
     Method method() default Method.GET;
 
     int priority() default 50;
+
+    String[] versions() default {};
 }

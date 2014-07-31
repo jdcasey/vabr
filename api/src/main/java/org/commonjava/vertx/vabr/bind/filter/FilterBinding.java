@@ -8,50 +8,24 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.filter;
+package org.commonjava.vertx.vabr.bind.filter;
+
+import java.util.List;
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.bind.AbstractBinding;
 import org.commonjava.vertx.vabr.types.Method;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public abstract class FilterBinding
+    extends AbstractBinding
     implements Comparable<FilterBinding>
 {
 
-    private final String path;
-
-    private final Method method;
-
-    private final int priority;
-
-    private final String handlerKey;
-
-    protected FilterBinding( final int priority, final String path, final Method method, final String handlerKey )
+    protected FilterBinding( final int priority, final String path, final Method method, final String handlerKey,
+                             final List<String> versions )
     {
-        this.priority = priority;
-        this.path = path;
-        this.method = method;
-        this.handlerKey = handlerKey;
-    }
-
-    public int getPriority()
-    {
-        return priority;
-    }
-
-    public String getPath()
-    {
-        return path;
-    }
-
-    public Method getMethod()
-    {
-        return method;
-    }
-
-    public String getHandlerKey()
-    {
-        return handlerKey;
+        super( priority, path, method, handlerKey, versions );
     }
 
     @Override

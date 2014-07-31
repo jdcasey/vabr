@@ -2,9 +2,9 @@ package ${pkg};
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
 import org.commonjava.vertx.vabr.types.Method;
-import org.commonjava.vertx.vabr.filter.ExecutionChain;
-import org.commonjava.vertx.vabr.filter.FilterBinding;
-import org.commonjava.vertx.vabr.filter.AbstractFilterCollection;
+import org.commonjava.vertx.vabr.bind.filter.ExecutionChain;
+import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
+import org.commonjava.vertx.vabr.bind.filter.AbstractFilterCollection;
 
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -22,7 +22,9 @@ public final class ${className}
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     public ${className}()
-    {<% templates.each { %>
+    {<% templates.each {
+          def versions = "new ArrayList<String>(Arrays.<String>asList(" + it.getVersions().collect({v -> "\"" + v + "\""}).join(", ") + "))"
+     %>
         bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}" )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest request, ExecutionChain chain )

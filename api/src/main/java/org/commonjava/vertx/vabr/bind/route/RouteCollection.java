@@ -8,14 +8,15 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.filter;
+package org.commonjava.vertx.vabr.bind.route;
 
 import java.util.Set;
 
-public interface FilterCollection
-    extends Iterable<FilterBinding>
+
+public interface RouteCollection
+    extends Iterable<RouteBinding>
 {
 
-    Set<FilterBinding> getFilters();
+    Set<RouteBinding> getRoutes();
 
 }

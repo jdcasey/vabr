@@ -26,16 +26,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.commonjava.vertx.vabr.anno.Handles;
-import org.commonjava.vertx.vabr.filter.FilterBinding;
-import org.commonjava.vertx.vabr.filter.FilterCollection;
-import org.commonjava.vertx.vabr.helper.BindingContext;
+import org.commonjava.vertx.vabr.bind.BindingContext;
+import org.commonjava.vertx.vabr.bind.BindingKey;
+import org.commonjava.vertx.vabr.bind.PatternFilterBinding;
+import org.commonjava.vertx.vabr.bind.PatternRouteBinding;
+import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
+import org.commonjava.vertx.vabr.bind.filter.FilterCollection;
+import org.commonjava.vertx.vabr.bind.route.RouteBinding;
+import org.commonjava.vertx.vabr.bind.route.RouteCollection;
 import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
-import org.commonjava.vertx.vabr.helper.PatternFilterBinding;
-import org.commonjava.vertx.vabr.helper.PatternRouteBinding;
-import org.commonjava.vertx.vabr.route.RouteBinding;
-import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.helper.RoutingCriteria;
 import org.commonjava.vertx.vabr.types.BuiltInParam;
 import org.commonjava.vertx.vabr.types.Method;
+import org.commonjava.vertx.vabr.util.RouteHeader;
 import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +51,9 @@ public class ApplicationRouter
 
     protected final Logger logger = LoggerFactory.getLogger( getClass() );
 
-    private Map<Method, List<PatternRouteBinding>> routeBindings = new HashMap<>();
+    private Map<BindingKey, List<PatternRouteBinding>> routeBindings = new HashMap<>();
 
-    private final Map<Method, List<PatternFilterBinding>> filterBindings = new HashMap<>();
+    private Map<BindingKey, List<PatternFilterBinding>> filterBindings = new HashMap<>();
 
     private final Map<String, Object> handlers = new HashMap<>();
 
@@ -58,7 +61,11 @@ public class ApplicationRouter
 
     private String prefix;
 
-    private ExecutorService executor;
+    private String appAcceptId;
+
+    private String defaultVersion = "v1";
+
+    private ExecutorService handlerExecutor;
 
     public ApplicationRouter()
     {
@@ -67,7 +74,7 @@ public class ApplicationRouter
 
     public ApplicationRouter( final ExecutorService executor )
     {
-        this.executor = executor;
+        this.handlerExecutor = executor;
         this.prefix = null;
     }
 
@@ -79,7 +86,7 @@ public class ApplicationRouter
     public ApplicationRouter( final String prefix, final ExecutorService executor )
     {
         this.prefix = prefix;
-        this.executor = executor;
+        this.handlerExecutor = executor;
     }
 
     public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
@@ -88,40 +95,42 @@ public class ApplicationRouter
         bindRoutes( routes, routeCollections );
     }
 
-    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections, final ExecutorService executor )
+    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections,
+                              final ExecutorService executor )
     {
-        this.executor = executor;
+        this.handlerExecutor = executor;
         this.prefix = null;
         bindRoutes( routes, routeCollections );
     }
 
-    public ApplicationRouter( final String prefix, final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
+    public ApplicationRouter( final String prefix, final Iterable<?> routes,
+                              final Iterable<RouteCollection> routeCollections )
     {
         this.prefix = prefix;
         bindRoutes( routes, routeCollections );
     }
 
-    public ApplicationRouter( final String prefix, final Iterable<?> routes, final Iterable<RouteCollection> routeCollections,
-                              final ExecutorService executor )
+    public ApplicationRouter( final String prefix, final Iterable<?> routes,
+                              final Iterable<RouteCollection> routeCollections, final ExecutorService executor )
     {
         this.prefix = prefix;
-        this.executor = executor;
+        this.handlerExecutor = executor;
         bindRoutes( routes, routeCollections );
     }
 
     public void setHandlerExecutor( final ExecutorService executor )
     {
-        this.executor = executor;
+        this.handlerExecutor = executor;
     }
 
     public synchronized ExecutorService getHandlerExecutor()
     {
-        if ( executor == null )
+        if ( handlerExecutor == null )
         {
-            executor = Executors.newCachedThreadPool();
+            handlerExecutor = Executors.newCachedThreadPool();
         }
 
-        return executor;
+        return handlerExecutor;
     }
 
     public void bindFilters( final Iterable<?> handlers, final Iterable<FilterCollection> filterCollections )
@@ -254,21 +263,33 @@ public class ApplicationRouter
         }
 
         final Method method = Method.valueOf( request.method() );
+        final RoutingCriteria routingCriteria = RoutingCriteria.parse( request, this.appAcceptId, this.defaultVersion );
 
-        logger.info( "REQUEST>>> {} {}\n", method, path );
+        final BindingKey key = new BindingKey( method, routingCriteria.getVersion() );
 
-        BindingContext ctx = findBinding( method, path );
+        logger.info( "REQUEST>>> {} {}\n", key, path );
 
-        if ( ctx == null )
-        {
-            ctx = findBinding( Method.ANY, path );
-        }
+        final BindingContext ctx = findBinding( key, path, routingCriteria );
 
         if ( ctx != null )
         {
-            final RouteBinding handler = ctx.getRouteBinding()
+            final RouteBinding handler = ctx.getPatternRouteBinding()
                                             .getHandler();
-            // FIXME Wrap this in an executor that knows about filters AND the fundamental route...
+
+            final String contentType = routingCriteria.getRawAccept();
+            if ( contentType != null )
+            {
+                request.headers()
+                       .add( RouteHeader.recommended_content_type.header(), contentType );
+            }
+
+            final String version = routingCriteria.getVersion();
+            if ( version != null )
+            {
+                request.headers()
+                       .add( RouteHeader.recommended_content_version.header(), version );
+            }
+
             logger.info( "MATCH: {}\n", handler );
             parseParams( ctx, request );
 
@@ -288,7 +309,7 @@ public class ApplicationRouter
         final String fullPath = request.path();
         final String uri = requestUri( request );
 
-        final PatternRouteBinding routeBinding = ctx.getRouteBinding();
+        final PatternRouteBinding routeBinding = ctx.getPatternRouteBinding();
         final List<String> paramNames = routeBinding.getParamNames();
         final RouteBinding handler = routeBinding.getHandler();
 
@@ -385,9 +406,9 @@ public class ApplicationRouter
                .set( params );
     }
 
-    protected BindingContext findBinding( final Method method, final String path )
+    protected BindingContext findBinding( final BindingKey key, final String path, final RoutingCriteria routingCriteria )
     {
-        final List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( method );
+        final List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( key );
 
         PatternFilterBinding filterBinding = null;
         if ( allFilterBindings != null )
@@ -404,7 +425,7 @@ public class ApplicationRouter
             }
         }
 
-        final List<PatternRouteBinding> routeBindings = this.routeBindings.get( method );
+        final List<PatternRouteBinding> routeBindings = this.routeBindings.get( key );
         //        logger.info( "Available bindings:\n  {}\n", join( bindings, "\n  " ) );
         if ( routeBindings != null )
         {
@@ -414,7 +435,27 @@ public class ApplicationRouter
                                          .matcher( path );
                 if ( m.matches() )
                 {
-                    return new BindingContext( m, binding, filterBinding );
+                    final String produces = binding.getHandler()
+                                                   .getContentType();
+
+                    final String accept = routingCriteria.getModifiedAccept();
+                    if ( produces != null && accept != null )
+                    {
+                        if ( accept.equals( RoutingCriteria.ACCEPT_ANY )
+                            || produces.equalsIgnoreCase( routingCriteria.getModifiedAccept() ) )
+                        {
+                            return new BindingContext( m, binding, filterBinding );
+                        }
+                        else
+                        {
+                            logger.warn( "Accept content-type: '{}' DID NOT MATCH produced content-type: '{}' for: {}. NOT A MATCH.",
+                                         routingCriteria.getModifiedAccept(), produces, binding );
+                        }
+                    }
+                    else
+                    {
+                        return new BindingContext( m, binding, filterBinding );
+                    }
                 }
             }
         }
@@ -432,15 +473,42 @@ public class ApplicationRouter
         final Method method = handler.getMethod();
         final String path = handler.getPath();
 
-        List<PatternRouteBinding> b = routeBindings.get( method );
-        if ( b == null )
+        logger.info( "Using appId: {} and default version: {}", appAcceptId, defaultVersion );
+        List<String> versions = handler.getVersions();
+        if ( versions == null || versions.isEmpty() )
         {
-            b = new ArrayList<>();
-            routeBindings.put( method, b );
+            versions = Collections.singletonList( defaultVersion );
         }
 
-        logger.info( "ADD Method: {}, Pattern: {}, Route: {}\n", method, path, handler );
-        addPattern( path, handler, b );
+        for ( final String version : versions )
+        {
+            final Set<Method> methods = new HashSet<>();
+            if ( method == Method.ANY )
+            {
+                for ( final Method m : Method.values() )
+                {
+                    methods.add( m );
+                }
+            }
+            else
+            {
+                methods.add( method );
+            }
+
+            for ( final Method m : methods )
+            {
+                final BindingKey key = new BindingKey( m, version );
+                List<PatternRouteBinding> b = routeBindings.get( m );
+                if ( b == null )
+                {
+                    b = new ArrayList<>();
+                    routeBindings.put( key, b );
+                }
+
+                logger.info( "ADD: {}, Pattern: {}, Route: {}\n", key, path, handler );
+                addPattern( path, handler, b );
+            }
+        }
     }
 
     /**
@@ -453,54 +521,58 @@ public class ApplicationRouter
         final Method method = handler.getMethod();
         final String path = handler.getPath();
 
-        List<PatternFilterBinding> b = filterBindings.get( method );
-        if ( b == null )
+        logger.info( "Using appId: {} and default version: {}", appAcceptId, defaultVersion );
+        List<String> versions = handler.getVersions();
+        if ( versions == null || versions.isEmpty() )
         {
-            b = new ArrayList<>();
-            filterBindings.put( method, b );
+            versions = Collections.singletonList( defaultVersion );
         }
 
-        logger.info( "ADD Method: {}, Pattern: {}, Filter: {}\n", method, path, handler );
-        final Set<Method> methods = new HashSet<>();
-        if ( method == Method.ANY )
+        for ( final String version : versions )
         {
-            for ( final Method m : Method.values() )
+            final Set<Method> methods = new HashSet<>();
+            if ( method == Method.ANY )
             {
-                methods.add( m );
-            }
-        }
-        else
-        {
-            methods.add( method );
-        }
-
-        for ( final Method m : methods )
-        {
-            List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( m );
-            if ( allFilterBindings == null )
-            {
-                allFilterBindings = new ArrayList<>();
-                this.filterBindings.put( m, allFilterBindings );
-            }
-
-            boolean found = false;
-            for ( final PatternFilterBinding binding : allFilterBindings )
-            {
-                if ( binding.getPattern()
-                            .pattern()
-                            .equals( handler.getPath() ) )
+                for ( final Method m : Method.values() )
                 {
-                    binding.addFilter( handler );
-                    found = true;
-                    break;
+                    methods.add( m );
                 }
             }
-
-            if ( !found )
+            else
             {
-                final PatternFilterBinding binding =
-                    new PatternFilterBinding( Pattern.compile( handler.getPath() ), handler );
-                allFilterBindings.add( binding );
+                methods.add( method );
+            }
+
+            for ( final Method m : methods )
+            {
+                final BindingKey key = new BindingKey( m, version );
+
+                logger.info( "ADD: {}, Pattern: {}, Filter: {}\n", key, path, handler );
+                List<PatternFilterBinding> allFilterBindings = this.filterBindings.get( key );
+                if ( allFilterBindings == null )
+                {
+                    allFilterBindings = new ArrayList<>();
+                    this.filterBindings.put( key, allFilterBindings );
+                }
+
+                boolean found = false;
+                for ( final PatternFilterBinding binding : allFilterBindings )
+                {
+                    if ( binding.getPattern()
+                                .pattern()
+                                .equals( handler.getPath() ) )
+                    {
+                        binding.addFilter( handler );
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( !found )
+                {
+                    final PatternFilterBinding binding = new PatternFilterBinding( handler.getPath(), handler );
+                    allFilterBindings.add( binding );
+                }
             }
         }
     }
@@ -524,12 +596,12 @@ public class ApplicationRouter
         Collections.sort( bindings );
     }
 
-    public Map<Method, List<PatternRouteBinding>> getRouteBindings()
+    public Map<BindingKey, List<PatternRouteBinding>> getRouteBindings()
     {
         return routeBindings;
     }
 
-    public Map<Method, List<PatternFilterBinding>> getFilterBindings()
+    public Map<BindingKey, List<PatternFilterBinding>> getFilterBindings()
     {
         return filterBindings;
     }
@@ -559,15 +631,45 @@ public class ApplicationRouter
         this.prefix = prefix;
     }
 
-    protected void setBindings( final Map<Method, List<PatternRouteBinding>> bindings )
+    public void setRouteBindings( final Map<BindingKey, List<PatternRouteBinding>> bindings )
     {
         this.routeBindings = bindings;
     }
 
-    protected void setHandlers( final Map<String, Object> handlers )
+    public void setFilterBindings( final Map<BindingKey, List<PatternFilterBinding>> bindings )
+    {
+        this.filterBindings = bindings;
+    }
+
+    public void setHandlers( final Map<String, Object> handlers )
     {
         this.handlers.clear();
         this.handlers.putAll( handlers );
+    }
+
+    public String getAppAcceptId()
+    {
+        return appAcceptId;
+    }
+
+    public void setAppAcceptId( final String appAcceptId )
+    {
+        this.appAcceptId = appAcceptId;
+    }
+
+    public String getDefaultVersion()
+    {
+        return defaultVersion;
+    }
+
+    public void setDefaultVersion( final String defaultVersion )
+    {
+        this.defaultVersion = defaultVersion;
+    }
+
+    protected Logger getLogger()
+    {
+        return logger;
     }
 
 }

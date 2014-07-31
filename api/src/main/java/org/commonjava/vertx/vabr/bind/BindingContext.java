@@ -8,7 +8,7 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.helper;
+package org.commonjava.vertx.vabr.bind;
 
 import java.util.regex.Matcher;
 
@@ -16,15 +16,15 @@ public class BindingContext
 {
     private final Matcher matcher;
 
-    private final PatternRouteBinding routeBinding;
+    private final PatternRouteBinding patternRouteBinding;
 
-    private final PatternFilterBinding filterBinding;
+    private final PatternFilterBinding patternFilterBinding;
 
     public BindingContext( final Matcher matcher, final PatternRouteBinding routeBinding, final PatternFilterBinding filterBinding )
     {
         this.matcher = matcher;
-        this.routeBinding = routeBinding;
-        this.filterBinding = filterBinding;
+        this.patternRouteBinding = routeBinding;
+        this.patternFilterBinding = filterBinding;
     }
 
     public Matcher getMatcher()
@@ -32,13 +32,13 @@ public class BindingContext
         return matcher;
     }
 
-    public PatternRouteBinding getRouteBinding()
+    public PatternRouteBinding getPatternRouteBinding()
     {
-        return routeBinding;
+        return patternRouteBinding;
     }
 
-    public PatternFilterBinding getFilterBinding()
+    public PatternFilterBinding getPatternFilterBinding()
     {
-        return filterBinding;
+        return patternFilterBinding;
     }
 }

@@ -8,12 +8,14 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.filter;
+package org.commonjava.vertx.vabr.bind.filter;
 
-public interface ExecutionChain
+import java.util.Set;
+
+public interface FilterCollection
+    extends Iterable<FilterBinding>
 {
 
-    void handle()
-        throws Exception;
+    Set<FilterBinding> getFilters();
 
 }

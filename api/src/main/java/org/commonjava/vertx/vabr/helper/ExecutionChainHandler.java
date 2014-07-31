@@ -14,9 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
-import org.commonjava.vertx.vabr.filter.ExecutionChain;
-import org.commonjava.vertx.vabr.filter.FilterBinding;
-import org.commonjava.vertx.vabr.route.RouteBinding;
+import org.commonjava.vertx.vabr.bind.BindingContext;
+import org.commonjava.vertx.vabr.bind.filter.ExecutionChain;
+import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
+import org.commonjava.vertx.vabr.bind.route.RouteBinding;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public class ExecutionChainHandler
@@ -36,15 +37,15 @@ public class ExecutionChainHandler
     {
         this.router = router;
         this.request = request;
-        if ( ctx.getFilterBinding() != null )
+        if ( ctx.getPatternFilterBinding() != null )
         {
-            filters = ctx.getFilterBinding()
+            filters = ctx.getPatternFilterBinding()
                          .getFilters();
         }
 
-        if ( ctx.getRouteBinding() != null )
+        if ( ctx.getPatternRouteBinding() != null )
         {
-            route = ctx.getRouteBinding()
+            route = ctx.getPatternRouteBinding()
                        .getHandler();
         }
     }

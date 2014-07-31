@@ -8,33 +8,33 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.route;
+package org.commonjava.vertx.vabr.bind.filter;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public abstract class AbstractRouteCollection
-    implements RouteCollection
+public abstract class AbstractFilterCollection
+    implements FilterCollection
 {
 
-    private final Set<RouteBinding> routes = new HashSet<>();
+    private final Set<FilterBinding> filters = new HashSet<>();
 
-    protected void bind( final RouteBinding route )
+    protected void bind( final FilterBinding filter )
     {
-        routes.add( route );
+        filters.add( filter );
     }
 
     @Override
-    public final Set<RouteBinding> getRoutes()
+    public final Set<FilterBinding> getFilters()
     {
-        return routes;
+        return filters;
     }
 
     @Override
-    public Iterator<RouteBinding> iterator()
+    public Iterator<FilterBinding> iterator()
     {
-        return routes.iterator();
+        return filters.iterator();
     }
 
 }

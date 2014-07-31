@@ -47,15 +47,13 @@ import org.commonjava.vertx.vabr.anno.FilterRoutes;
 import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.anno.Route;
 import org.commonjava.vertx.vabr.anno.Routes;
-import org.commonjava.vertx.vabr.filter.FilterCollection;
-import org.commonjava.vertx.vabr.route.RouteCollection;
+import org.commonjava.vertx.vabr.bind.filter.FilterCollection;
+import org.commonjava.vertx.vabr.bind.route.RouteCollection;
 
 /* @formatter:off */
 @SupportedAnnotationTypes( { 
     "org.commonjava.vertx.vabr.anno.FilterRoutes",
     "org.commonjava.vertx.vabr.anno.FilterRoute",
-    "org.commonjava.vertx.vabr.anno.HandlerClass",
-    "org.commonjava.vertx.vabr.anno.PathPrefix",
     "org.commonjava.vertx.vabr.anno.Routes",
     "org.commonjava.vertx.vabr.anno.Route"
 } )

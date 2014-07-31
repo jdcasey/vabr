@@ -2,8 +2,8 @@ package ${pkg};
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
 import org.commonjava.vertx.vabr.types.Method;
-import org.commonjava.vertx.vabr.route.RouteBinding;
-import org.commonjava.vertx.vabr.route.AbstractRouteCollection;
+import org.commonjava.vertx.vabr.bind.route.RouteBinding;
+import org.commonjava.vertx.vabr.bind.route.AbstractRouteCollection;
 
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
@@ -11,6 +11,10 @@ import org.vertx.java.core.http.HttpServerRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
 
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
@@ -38,6 +42,7 @@ public final class ${className}
     }
     
     <% templates.each {
+          def versions = "new ArrayList<String>(Arrays.<String>asList(" + it.getVersions().collect({v -> "\"" + v + "\""}).join(", ") + "))"
           if ( it.getBinding().name() == "raw" )
           {
     %>
@@ -48,7 +53,7 @@ public final class ${className}
 
         public RawBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
-            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}" );
+            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
         }
         
         public void dispatch( ApplicationRouter router, HttpServerRequest request )
@@ -119,7 +124,7 @@ public final class ${className}
     
         public BodyBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
-            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}" );
+            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
         }
         
         public synchronized void dispatch( ApplicationRouter router, HttpServerRequest request )

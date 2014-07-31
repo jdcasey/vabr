@@ -8,24 +8,24 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.helper;
+package org.commonjava.vertx.vabr.bind;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.commonjava.vertx.vabr.filter.FilterBinding;
+import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
 
 public class PatternFilterBinding
 {
-    private final Pattern pattern;
+    private final String regex;
 
     private final List<FilterBinding> filters = new ArrayList<>();
 
-    public PatternFilterBinding( final Pattern pattern, final FilterBinding filter )
+    public PatternFilterBinding( final String regex, final FilterBinding filter )
     {
-        this.pattern = pattern;
+        this.regex = regex;
         filters.add( filter );
     }
 
@@ -40,7 +40,7 @@ public class PatternFilterBinding
 
     public Pattern getPattern()
     {
-        return pattern;
+        return Pattern.compile( regex );
     }
 
     public List<FilterBinding> getFilters()
@@ -51,6 +51,6 @@ public class PatternFilterBinding
     @Override
     public String toString()
     {
-        return String.format( "Filter Binding [pattern: %s, filters: %s]", pattern, filters );
+        return String.format( "Filter Binding [pattern: %s, filters: %s]", regex, filters );
     }
 }

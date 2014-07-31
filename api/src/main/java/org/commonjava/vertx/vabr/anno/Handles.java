@@ -24,4 +24,6 @@ public @interface Handles
     String value() default "";
 
     String key() default "";
+
+    String[] versions() default {};
 }

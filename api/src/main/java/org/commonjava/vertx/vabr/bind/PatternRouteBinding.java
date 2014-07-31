@@ -8,14 +8,14 @@
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.commonjava.vertx.vabr.helper;
+package org.commonjava.vertx.vabr.bind;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.commonjava.vertx.vabr.route.RouteBinding;
+import org.commonjava.vertx.vabr.bind.route.RouteBinding;
 
 public class PatternRouteBinding
     implements Comparable<PatternRouteBinding>

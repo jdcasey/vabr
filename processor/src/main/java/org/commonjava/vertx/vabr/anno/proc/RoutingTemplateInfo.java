@@ -38,7 +38,7 @@ public final class RoutingTemplateInfo
 
     public RoutingTemplateInfo( final Element elem, final Route route, final Handles handles )
     {
-        super( elem, handles, route.priority(), route.method(), route.path(), route.value() );
+        super( elem, handles, route.priority(), route.method(), route.path(), route.value(), route.versions() );
         this.httpContentType = route.contentType();
         this.binding = route.binding();
         this.routeKey = route.routeKey();

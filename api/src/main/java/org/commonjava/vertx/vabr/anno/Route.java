@@ -37,4 +37,6 @@ public @interface Route
 
     BindingType binding() default BindingType.body_handler;
 
+    String[] versions() default {};
+
 }
