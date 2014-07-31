@@ -67,55 +67,21 @@ public class ApplicationRouter
 
     private ExecutorService handlerExecutor;
 
-    public ApplicationRouter()
+    public ApplicationRouter( final ApplicationRouterConfig config )
     {
-        this.prefix = null;
-    }
+        this.prefix = config.getPrefix();
+        this.noMatchHandler = config.getNoMatchHandler();
+        this.appAcceptId = config.getAppAcceptId();
+        this.defaultVersion = config.getDefaultVersion();
+        this.handlerExecutor = config.getHandlerExecutor();
 
-    public ApplicationRouter( final ExecutorService executor )
-    {
-        this.handlerExecutor = executor;
-        this.prefix = null;
-    }
+        final Set<Object> h = config.getHandlers();
+        final List<RouteCollection> routeCollections = config.getRouteCollections();
+        final List<FilterCollection> filterCollections = config.getFilterCollections();
 
-    public ApplicationRouter( final String prefix )
-    {
-        this.prefix = prefix;
-    }
-
-    public ApplicationRouter( final String prefix, final ExecutorService executor )
-    {
-        this.prefix = prefix;
-        this.handlerExecutor = executor;
-    }
-
-    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections )
-    {
-        this.prefix = null;
-        bindRoutes( routes, routeCollections );
-    }
-
-    public ApplicationRouter( final Iterable<?> routes, final Iterable<RouteCollection> routeCollections,
-                              final ExecutorService executor )
-    {
-        this.handlerExecutor = executor;
-        this.prefix = null;
-        bindRoutes( routes, routeCollections );
-    }
-
-    public ApplicationRouter( final String prefix, final Iterable<?> routes,
-                              final Iterable<RouteCollection> routeCollections )
-    {
-        this.prefix = prefix;
-        bindRoutes( routes, routeCollections );
-    }
-
-    public ApplicationRouter( final String prefix, final Iterable<?> routes,
-                              final Iterable<RouteCollection> routeCollections, final ExecutorService executor )
-    {
-        this.prefix = prefix;
-        this.handlerExecutor = executor;
-        bindRoutes( routes, routeCollections );
+        bindHandlers( h );
+        bindRouteCollections( routeCollections );
+        bindFilterCollections( filterCollections );
     }
 
     public void setHandlerExecutor( final ExecutorService executor )
@@ -135,6 +101,18 @@ public class ApplicationRouter
 
     public void bindFilters( final Iterable<?> handlers, final Iterable<FilterCollection> filterCollections )
     {
+        bindHandlers( handlers );
+        bindFilterCollections( filterCollections );
+    }
+
+    public void bindRoutes( final Iterable<?> handlers, final Iterable<RouteCollection> routeCollections )
+    {
+        bindHandlers( handlers );
+        bindRouteCollections( routeCollections );
+    }
+
+    public void bindHandlers( final Iterable<?> handlers )
+    {
         if ( handlers != null )
         {
             for ( final Object handler : handlers )
@@ -150,7 +128,10 @@ public class ApplicationRouter
                 this.handlers.put( key, handler );
             }
         }
+    }
 
+    public void bindFilterCollections( final Iterable<FilterCollection> filterCollections )
+    {
         if ( filterCollections != null )
         {
             for ( final FilterCollection fc : filterCollections )
@@ -171,24 +152,8 @@ public class ApplicationRouter
         }
     }
 
-    public void bindRoutes( final Iterable<?> handlers, final Iterable<RouteCollection> routeCollections )
+    public void bindRouteCollections( final Iterable<RouteCollection> routeCollections )
     {
-        if ( handlers != null )
-        {
-            for ( final Object handler : handlers )
-            {
-                final String key = getHandlerKey( handler.getClass() );
-                if ( this.handlers.containsKey( key ) )
-                {
-                    continue;
-                }
-
-                logger.info( "Handlers += {} ({})", key, handler.getClass()
-                                                                .getName() );
-                this.handlers.put( key, handler );
-            }
-        }
-
         if ( routeCollections != null )
         {
             for ( final RouteCollection rc : routeCollections )

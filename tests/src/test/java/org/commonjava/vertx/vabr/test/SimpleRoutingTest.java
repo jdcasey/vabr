@@ -1,12 +1,12 @@
 package org.commonjava.vertx.vabr.test;
 
 import java.net.URLClassLoader;
-import java.util.Collections;
 
 import org.commonjava.test.compile.CompilerFixture;
 import org.commonjava.test.compile.CompilerFixtureConfig;
 import org.commonjava.test.compile.CompilerResult;
 import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.ApplicationRouterConfig;
 import org.commonjava.vertx.vabr.anno.proc.RoutingAnnotationProcessor;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
 import org.junit.Rule;
@@ -42,7 +42,9 @@ public class SimpleRoutingTest
         final Object handler = handlerCls.newInstance();
 
         final ApplicationRouter router =
-            new ApplicationRouter( Collections.singleton( handler ), Collections.singleton( collection ) );
+            new ApplicationRouter( new ApplicationRouterConfig().withHandler( handler )
+                                                                .withRouteCollection( collection ) );
+
         fixture.server()
                .setHandlerAndStart( router );
 

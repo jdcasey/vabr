@@ -10,6 +10,7 @@ import org.commonjava.test.compile.CompilerFixture;
 import org.commonjava.test.compile.CompilerFixtureConfig;
 import org.commonjava.test.compile.CompilerResult;
 import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.ApplicationRouterConfig;
 import org.commonjava.vertx.vabr.anno.proc.RoutingAnnotationProcessor;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
 import org.junit.Rule;
@@ -44,11 +45,11 @@ public class VersionedRoutingTest
         final Class<?> handlerCls = classLoader.loadClass( "org.test.MyResource" );
         final Object handler = handlerCls.newInstance();
 
-        final ApplicationRouter router = new ApplicationRouter();
-
-        router.setAppAcceptId( "app" );
-        router.setDefaultVersion( "v1" );
-        router.bindRoutes( Collections.singleton( handler ), Collections.singleton( collection ) );
+        final ApplicationRouter router =
+            new ApplicationRouter( new ApplicationRouterConfig().withAppAcceptId( "app" )
+                                                                .withDefaultVersion( "v1" )
+                                                                .withHandler( handler )
+                                                                .withRouteCollection( collection ) );
 
         fixture.server()
                .setHandlerAndStart( router );
