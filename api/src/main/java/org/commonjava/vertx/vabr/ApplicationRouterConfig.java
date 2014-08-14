@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 
 import org.commonjava.vertx.vabr.bind.filter.FilterCollection;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
+import org.commonjava.vertx.vabr.helper.RequestHandler;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.http.HttpServerRequest;
 
@@ -18,7 +19,7 @@ public class ApplicationRouterConfig
 
     private List<FilterCollection> filterCollections = new ArrayList<>();
 
-    private Set<Object> handlers = new HashSet<>();
+    private Set<RequestHandler> handlers = new HashSet<>();
 
     private Handler<HttpServerRequest> noMatchHandler;
 
@@ -107,18 +108,18 @@ public class ApplicationRouterConfig
         return this;
     }
 
-    public Set<Object> getHandlers()
+    public Set<RequestHandler> getHandlers()
     {
         return handlers;
     }
 
-    public ApplicationRouterConfig withHandlers( final Set<Object> handlers )
+    public ApplicationRouterConfig withHandlers( final Set<RequestHandler> handlers )
     {
         this.handlers = handlers;
         return this;
     }
 
-    public ApplicationRouterConfig withHandler( final Object handler )
+    public ApplicationRouterConfig withHandler( final RequestHandler handler )
     {
         this.handlers.add( handler );
         return this;

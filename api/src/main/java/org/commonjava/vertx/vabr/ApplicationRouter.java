@@ -35,6 +35,7 @@ import org.commonjava.vertx.vabr.bind.filter.FilterCollection;
 import org.commonjava.vertx.vabr.bind.route.RouteBinding;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
 import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
+import org.commonjava.vertx.vabr.helper.RequestHandler;
 import org.commonjava.vertx.vabr.helper.RoutingCriteria;
 import org.commonjava.vertx.vabr.types.BuiltInParam;
 import org.commonjava.vertx.vabr.types.Method;
@@ -75,7 +76,7 @@ public class ApplicationRouter
         this.defaultVersion = config.getDefaultVersion();
         this.handlerExecutor = config.getHandlerExecutor();
 
-        final Set<Object> h = config.getHandlers();
+        final Set<RequestHandler> h = config.getHandlers();
         final List<RouteCollection> routeCollections = config.getRouteCollections();
         final List<FilterCollection> filterCollections = config.getFilterCollections();
 
@@ -246,6 +247,9 @@ public class ApplicationRouter
             {
                 request.headers()
                        .add( RouteHeader.recommended_content_type.header(), contentType );
+
+                request.headers()
+                       .add( RouteHeader.base_accept.header(), routingCriteria.getModifiedAccept() );
             }
 
             final String version = routingCriteria.getVersion();

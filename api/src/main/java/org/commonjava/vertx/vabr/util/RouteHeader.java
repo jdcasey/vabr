@@ -3,7 +3,7 @@ package org.commonjava.vertx.vabr.util;
 public enum RouteHeader
 {
     recommended_content_type( "VABR-Recommended-Content-Type" ), accept( "Accept" ), recommended_content_version(
-        "VABR-Recommended-Content-Version" );
+        "VABR-Recommended-Content-Version" ), base_accept( "VABR-Base-Accept" );
 
     private final String header;
 

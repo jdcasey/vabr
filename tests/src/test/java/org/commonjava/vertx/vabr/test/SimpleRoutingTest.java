@@ -9,6 +9,7 @@ import org.commonjava.vertx.vabr.ApplicationRouter;
 import org.commonjava.vertx.vabr.ApplicationRouterConfig;
 import org.commonjava.vertx.vabr.anno.proc.RoutingAnnotationProcessor;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
+import org.commonjava.vertx.vabr.helper.RequestHandler;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -39,7 +40,7 @@ public class SimpleRoutingTest
         final RouteCollection collection = (RouteCollection) routesCls.newInstance();
 
         final Class<?> handlerCls = classLoader.loadClass( "org.test.MyResource" );
-        final Object handler = handlerCls.newInstance();
+        final RequestHandler handler = (RequestHandler) handlerCls.newInstance();
 
         final ApplicationRouter router =
             new ApplicationRouter( new ApplicationRouterConfig().withHandler( handler )
