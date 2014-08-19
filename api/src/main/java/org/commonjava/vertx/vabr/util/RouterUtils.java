@@ -51,7 +51,7 @@ public final class RouterUtils
 
     public static String trimPrefix( final String prefix, String path )
     {
-        if ( prefix != null )
+        if ( prefix != null && prefix.length() > 0 )
         {
             String p = prefix;
             if ( !p.startsWith( "/" ) )

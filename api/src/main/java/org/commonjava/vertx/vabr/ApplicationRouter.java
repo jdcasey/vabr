@@ -34,6 +34,7 @@ import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
 import org.commonjava.vertx.vabr.bind.filter.FilterCollection;
 import org.commonjava.vertx.vabr.bind.route.RouteBinding;
 import org.commonjava.vertx.vabr.bind.route.RouteCollection;
+import org.commonjava.vertx.vabr.helper.AcceptInfo;
 import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
 import org.commonjava.vertx.vabr.helper.RequestHandler;
 import org.commonjava.vertx.vabr.helper.RoutingCriteria;
@@ -62,18 +63,31 @@ public class ApplicationRouter
 
     private String prefix;
 
-    private String appAcceptId;
+    private String appAcceptId = "app";
 
     private String defaultVersion = "v1";
 
     private ExecutorService handlerExecutor;
 
+    public ApplicationRouter()
+    {
+        this( new ApplicationRouterConfig() );
+    }
+
     public ApplicationRouter( final ApplicationRouterConfig config )
     {
         this.prefix = config.getPrefix();
         this.noMatchHandler = config.getNoMatchHandler();
-        this.appAcceptId = config.getAppAcceptId();
-        this.defaultVersion = config.getDefaultVersion();
+
+        if ( config.getAppAcceptId() != null )
+        {
+            this.appAcceptId = config.getAppAcceptId();
+        }
+        if ( config.getDefaultVersion() != null )
+        {
+            this.defaultVersion = config.getDefaultVersion();
+        }
+
         this.handlerExecutor = config.getHandlerExecutor();
 
         final Set<RequestHandler> h = config.getHandlers();
@@ -231,39 +245,39 @@ public class ApplicationRouter
         final Method method = Method.valueOf( request.method() );
         final RoutingCriteria routingCriteria = RoutingCriteria.parse( request, this.appAcceptId, this.defaultVersion );
 
-        final BindingKey key = new BindingKey( method, routingCriteria.getVersion() );
-
-        logger.info( "REQUEST>>> {} {}\n", key, path );
-
-        final BindingContext ctx = findBinding( key, path, routingCriteria );
-
-        if ( ctx != null )
+        for ( final AcceptInfo info : routingCriteria )
         {
-            final RouteBinding handler = ctx.getPatternRouteBinding()
-                                            .getHandler();
+            final String version = info.getVersion();
+            final BindingKey key = new BindingKey( method, version );
 
-            final String contentType = routingCriteria.getRawAccept();
-            if ( contentType != null )
+            logger.info( "REQUEST>>> {} {}\n", key, path );
+
+            final BindingContext ctx = findBinding( key, path, routingCriteria );
+
+            if ( ctx != null )
             {
-                request.headers()
-                       .add( RouteHeader.recommended_content_type.header(), contentType );
+                final RouteBinding handler = ctx.getPatternRouteBinding()
+                                                .getHandler();
 
-                request.headers()
-                       .add( RouteHeader.base_accept.header(), routingCriteria.getModifiedAccept() );
-            }
+                if ( !info.getRawAccept()
+                          .equals( RoutingCriteria.ACCEPT_ANY ) )
+                {
+                    request.headers()
+                           .add( RouteHeader.recommended_content_type.header(), info.getRawAccept() );
 
-            final String version = routingCriteria.getVersion();
-            if ( version != null )
-            {
+                    request.headers()
+                           .add( RouteHeader.base_accept.header(), info.getBaseAccept() );
+                }
+
                 request.headers()
                        .add( RouteHeader.recommended_content_version.header(), version );
+
+                logger.info( "MATCH: {}\n", handler );
+                parseParams( ctx, request );
+
+                new ExecutionChainHandler( this, ctx, request ).execute();
+                return true;
             }
-
-            logger.info( "MATCH: {}\n", handler );
-            parseParams( ctx, request );
-
-            new ExecutionChainHandler( this, ctx, request ).execute();
-            return true;
         }
 
         return false;
@@ -407,18 +421,23 @@ public class ApplicationRouter
                     final String produces = binding.getHandler()
                                                    .getContentType();
 
-                    final String accept = routingCriteria.getModifiedAccept();
-                    if ( produces != null && accept != null )
+                    if ( produces != null )
                     {
-                        if ( accept.equals( RoutingCriteria.ACCEPT_ANY )
-                            || produces.equalsIgnoreCase( routingCriteria.getModifiedAccept() ) )
+                        for ( final AcceptInfo info : routingCriteria )
                         {
-                            return new BindingContext( m, binding, filterBinding );
-                        }
-                        else
-                        {
-                            logger.warn( "Accept content-type: '{}' DID NOT MATCH produced content-type: '{}' for: {}. NOT A MATCH.",
-                                         routingCriteria.getModifiedAccept(), produces, binding );
+                            if ( info.getBaseAccept()
+                                     .equals( RoutingCriteria.ACCEPT_ANY ) || info.getBaseAccept()
+                                                                                  .equals( produces.toLowerCase() )
+                                || info.getRawAccept()
+                                       .equals( produces.toLowerCase() ) )
+                            {
+                                return new BindingContext( m, binding, filterBinding );
+                            }
+                            else
+                            {
+                                logger.warn( "Accept content-type: '{}' DID NOT MATCH produced content-type: '{}' for: {}. NOT A MATCH.",
+                                             info.getBaseAccept(), produces, binding );
+                            }
                         }
                     }
                     else
@@ -467,7 +486,7 @@ public class ApplicationRouter
             for ( final Method m : methods )
             {
                 final BindingKey key = new BindingKey( m, version );
-                List<PatternRouteBinding> b = routeBindings.get( m );
+                List<PatternRouteBinding> b = routeBindings.get( key );
                 if ( b == null )
                 {
                     b = new ArrayList<>();

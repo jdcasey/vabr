@@ -1,73 +1,89 @@
 package org.commonjava.vertx.vabr.helper;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.commonjava.vertx.vabr.util.RouteHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public class RoutingCriteria
+    implements Iterable<AcceptInfo>
 {
+    private static final Logger logger = LoggerFactory.getLogger( RoutingCriteria.class );
+
     public static final String ACCEPT_ANY = "*/*";
 
-    private final String rawAccept;
+    public static final Set<String> ANY = Collections.unmodifiableSet( Collections.singleton( ACCEPT_ANY ) );
 
-    private final String modifiedAccept;
-
-    private final String version;
+    private final Set<AcceptInfo> accepts;
 
     public static RoutingCriteria parse( final HttpServerRequest request, final String appId,
                                          final String defaultVersion )
     {
-        final String rawAccept = request.headers()
+        final String header = request.headers()
                                         .get( RouteHeader.accept.header() );
 
-        if ( rawAccept == null )
+        if ( header == null || header.trim()
+                                     .length() < 1 )
         {
-            return new RoutingCriteria( null, null, defaultVersion );
-        }
-        else if ( rawAccept.equals( ACCEPT_ANY ) )
-        {
-            return new RoutingCriteria( rawAccept, rawAccept, defaultVersion );
+            return new RoutingCriteria(
+                                        Collections.singleton( new AcceptInfo( ACCEPT_ANY, ACCEPT_ANY, defaultVersion ) ) );
         }
 
-        String modifiedAccept = rawAccept;
-        String version = defaultVersion;
-        if ( rawAccept != null )
+        final Set<String> raw = new HashSet<String>( Arrays.asList( header.split( "\\s*,\\s*" ) ) );
+        final Set<String> rawAccept = new HashSet<String>( raw );
+        for ( final String r : raw )
+        {
+            rawAccept.add( r.toLowerCase() );
+        }
+
+        final Set<AcceptInfo> acceptInfos = new HashSet<>();
+        if ( !rawAccept.isEmpty() )
         {
             final String appPrefix = "application/" + appId + "-";
-            if ( rawAccept.startsWith( appPrefix ) )
+            for ( final String r : rawAccept )
             {
-                final String[] parts = rawAccept.substring( appPrefix.length() )
-                                                .split( "\\+" );
-                if ( parts.length > 1 )
+                logger.info( "Checking for ACCEPT header starting with: '{}' (header value is: '{}')", appPrefix,
+                             rawAccept );
+                if ( r.startsWith( appPrefix ) )
                 {
-                    version = parts[0];
-                    modifiedAccept = "application/" + parts[1];
+                    final String[] parts = r.substring( appPrefix.length() )
+                                            .split( "\\+" );
+
+                    if ( parts.length > 1 )
+                    {
+                        acceptInfos.add( new AcceptInfo( r, "application/" + parts[1], parts[0] ) );
+                    }
+                }
+                else
+                {
+                    acceptInfos.add( new AcceptInfo( r, r, defaultVersion ) );
                 }
             }
         }
 
-        return new RoutingCriteria( rawAccept, modifiedAccept, version );
+        return new RoutingCriteria( acceptInfos );
     }
 
-    private RoutingCriteria( final String rawAccept, final String modifiedAccept, final String version )
+    private RoutingCriteria( final Set<AcceptInfo> acceptInfos )
     {
-        this.rawAccept = rawAccept;
-        this.modifiedAccept = modifiedAccept;
-        this.version = version;
+        this.accepts = acceptInfos;
     }
 
-    public String getRawAccept()
+    public Set<AcceptInfo> getAccepts()
     {
-        return rawAccept;
+        return accepts;
     }
 
-    public String getModifiedAccept()
+    @Override
+    public Iterator<AcceptInfo> iterator()
     {
-        return modifiedAccept;
-    }
-
-    public String getVersion()
-    {
-        return version;
+        return accepts.iterator();
     }
 
 }
