@@ -298,49 +298,51 @@ public class ApplicationRouter
 
         final Handles pp = handler.getHandlesClass()
                                   .getAnnotation( Handles.class );
-        if ( pp != null )
+
+        String pathPrefix = pp.value();
+        if ( pathPrefix.length() < 1 )
         {
-            String pathPrefix = pp.value();
-            if ( pathPrefix.length() < 1 )
+            pathPrefix = pp.prefix();
+        }
+
+        final String find = pathPrefix.length() > 0 ? pathPrefix : prefix;
+        int idx = fullPath.indexOf( find );
+
+        String classBase = null;
+        String classContext = null;
+        if ( idx > -1 )
+        {
+            idx += find.length();
+            classBase = fullPath.substring( 0, idx );
+            params.put( BuiltInParam._classBase.key(), classBase );
+
+            idx = uri.indexOf( find ) + find.length();
+            classContext = uri.substring( 0, idx );
+            params.put( BuiltInParam._classContextUrl.key(), classContext );
+        }
+
+        int i = 1;
+
+        if ( matcher.groupCount() > 0 )
+        {
+            final int firstIdx = matcher.start( i ) + prefix.length();
+            // be defensive in case the first param is optional...
+            String routeBase = ( firstIdx > 0 ) ? fullPath.substring( 0, firstIdx ) : fullPath;
+            if ( routeBase.endsWith( "/" ) )
             {
-                pathPrefix = pp.prefix();
+                routeBase = routeBase.substring( 0, routeBase.length() - 1 );
             }
 
-            int idx = fullPath.indexOf( pathPrefix );
-            if ( idx > -1 )
-            {
-                idx += pathPrefix.length();
-                final String prefix = fullPath.substring( 0, idx );
-                params.put( BuiltInParam._classBase.key(), prefix );
 
-                idx = uri.indexOf( pathPrefix );
-                params.put( BuiltInParam._classContextUrl.key(), uri.substring( 0, idx ) );
-            }
+            params.put( BuiltInParam._routeBase.key(), routeBase );
+
+            idx = uri.indexOf( routeBase ) + routeBase.length();
+            params.put( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
         }
 
         if ( paramNames != null )
         {
             // Named params
-            int i = 1;
-
-            if ( !paramNames.isEmpty() )
-            {
-                final int firstIdx = matcher.start( i );
-
-                // be defensive in case the first param is optional...
-                String basePath = ( firstIdx > 0 ) ? fullPath.substring( 0, firstIdx ) : fullPath;
-
-                if ( basePath.endsWith( "/" ) )
-                {
-                    basePath = basePath.substring( 0, basePath.length() - 1 );
-                }
-
-                params.put( BuiltInParam._routeBase.key(), basePath );
-
-                final int idx = uri.indexOf( basePath ) + basePath.length();
-                params.put( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
-            }
-
             for ( final String param : paramNames )
             {
                 final String v = matcher.group( i );
@@ -352,17 +354,15 @@ public class ApplicationRouter
                 i++;
             }
         }
-        else
+
+        // Un-named params
+        for ( ; i < matcher.groupCount(); i++ )
         {
-            // Un-named params
-            for ( int i = 0; i < matcher.groupCount(); i++ )
+            final String v = matcher.group( i );
+            if ( v != null )
             {
-                final String v = matcher.group( i + 1 );
-                if ( v != null )
-                {
-                    logger.info( "PARAM param{} = {}", i, v );
-                    params.put( "param" + i, v );
-                }
+                logger.info( "PARAM param{} = {}", i, v );
+                params.put( "param" + i, v );
             }
         }
 
@@ -372,7 +372,7 @@ public class ApplicationRouter
             final String[] qe = query.split( "&" );
             for ( final String entry : qe )
             {
-                final int idx = entry.indexOf( '=' );
+                idx = entry.indexOf( '=' );
                 if ( idx > 1 )
                 {
                     params.put( "q:" + entry.substring( 0, idx ), entry.substring( idx + 1 ) );

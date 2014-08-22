@@ -1,9 +1,12 @@
 package org.commonjava.vertx.vabr.helper;
 
+import static org.apache.commons.lang.StringUtils.join;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.commonjava.vertx.vabr.util.RouteHeader;
@@ -20,62 +23,77 @@ public class RoutingCriteria
 
     public static final Set<String> ANY = Collections.unmodifiableSet( Collections.singleton( ACCEPT_ANY ) );
 
-    private final Set<AcceptInfo> accepts;
+    private final List<AcceptInfo> accepts;
 
     public static RoutingCriteria parse( final HttpServerRequest request, final String appId,
                                          final String defaultVersion )
     {
-        final String header = request.headers()
-                                        .get( RouteHeader.accept.header() );
+        final List<String> rawList = request.headers()
+                                        .getAll( RouteHeader.accept.header() );
 
-        if ( header == null || header.trim()
-                                     .length() < 1 )
+        final List<String> raw = new ArrayList<String>();
+        for ( final String listed : rawList )
         {
-            return new RoutingCriteria(
-                                        Collections.singleton( new AcceptInfo( ACCEPT_ANY, ACCEPT_ANY, defaultVersion ) ) );
+            final String[] parts = listed.split( "\\s*,\\s*" );
+            if ( parts.length == 1 )
+            {
+                logger.info( "adding atomic accept header: '{}'", listed );
+                raw.add( listed );
+            }
+            else
+            {
+                logger.info( "Adding split header values: '{}'", join( parts, "', '" ) );
+                raw.addAll( Arrays.asList( parts ) );
+            }
         }
 
-        final Set<String> raw = new HashSet<String>( Arrays.asList( header.split( "\\s*,\\s*" ) ) );
-        final Set<String> rawAccept = new HashSet<String>( raw );
+        logger.info( "Got raw ACCEPT header values:\n  {}", join( raw, "\n  " ) );
+
+        if ( raw == null || raw.isEmpty() )
+        {
+            return new RoutingCriteria( Collections.singletonList( new AcceptInfo( ACCEPT_ANY, ACCEPT_ANY,
+                                                                                   defaultVersion ) ) );
+        }
+
+        final List<AcceptInfo> acceptInfos = new ArrayList<AcceptInfo>();
         for ( final String r : raw )
         {
-            rawAccept.add( r.toLowerCase() );
-        }
-
-        final Set<AcceptInfo> acceptInfos = new HashSet<>();
-        if ( !rawAccept.isEmpty() )
-        {
-            final String appPrefix = "application/" + appId + "-";
-            for ( final String r : rawAccept )
+            String cleaned = r.toLowerCase();
+            final int qIdx = cleaned.indexOf( ';' );
+            if ( qIdx > -1 )
             {
-                logger.info( "Checking for ACCEPT header starting with: '{}' (header value is: '{}')", appPrefix,
-                             rawAccept );
-                if ( r.startsWith( appPrefix ) )
-                {
-                    final String[] parts = r.substring( appPrefix.length() )
-                                            .split( "\\+" );
+                // FIXME: We shouldn't discard quality suffix...
+                cleaned = cleaned.substring( 0, qIdx );
+            }
 
-                    if ( parts.length > 1 )
-                    {
-                        acceptInfos.add( new AcceptInfo( r, "application/" + parts[1], parts[0] ) );
-                    }
-                }
-                else
-                {
-                    acceptInfos.add( new AcceptInfo( r, r, defaultVersion ) );
-                }
+            logger.info( "Cleaned up: {} to: {}", r, cleaned );
+
+            final String appPrefix = "application/" + appId + "-";
+
+            logger.info( "Checking for ACCEPT header starting with: '{}' and containing: '+' (header value is: '{}')",
+                         appPrefix, cleaned );
+            if ( cleaned.startsWith( appPrefix ) && cleaned.contains( "+" ) )
+            {
+                final String[] parts = cleaned.substring( appPrefix.length() )
+                                              .split( "\\+" );
+
+                acceptInfos.add( new AcceptInfo( cleaned, "application/" + parts[1], parts[0] ) );
+            }
+            else
+            {
+                acceptInfos.add( new AcceptInfo( cleaned, cleaned, defaultVersion ) );
             }
         }
 
         return new RoutingCriteria( acceptInfos );
     }
 
-    private RoutingCriteria( final Set<AcceptInfo> acceptInfos )
+    private RoutingCriteria( final List<AcceptInfo> acceptInfos )
     {
         this.accepts = acceptInfos;
     }
 
-    public Set<AcceptInfo> getAccepts()
+    public List<AcceptInfo> getAccepts()
     {
         return accepts;
     }
@@ -84,6 +102,12 @@ public class RoutingCriteria
     public Iterator<AcceptInfo> iterator()
     {
         return accepts.iterator();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "RoutingCriteria: [\n  %s\n]", join( accepts, "\n  " ) );
     }
 
 }

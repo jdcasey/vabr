@@ -36,7 +36,7 @@ public final class AnnotationUtils
                 c = cls.getSuperclass();
             }
         }
-        while ( anno == null && c != null );
+        while ( anno == null && c != null && !Object.class.equals( c ) );
 
         if ( anno == null )
         {
