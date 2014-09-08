@@ -11,6 +11,10 @@ import org.vertx.java.core.http.HttpServerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 <%if( qualifier ){ %>
 import ${qualifier.fullName};
 
@@ -25,7 +29,7 @@ public final class ${className}
     {<% templates.each {
           def versions = "new ArrayList<String>(Arrays.<String>asList(" + it.getVersions().collect({v -> "\"" + v + "\""}).join(", ") + "))"
      %>
-        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}" )
+        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}", ${versions} )
         {
             public void dispatch( ApplicationRouter router, HttpServerRequest request, ExecutionChain chain )
                 throws Exception
