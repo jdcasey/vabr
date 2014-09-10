@@ -53,6 +53,11 @@ public final class RouterUtils
     {
         if ( prefix != null && prefix.length() > 0 )
         {
+            if ( prefix.equals( "/" ) )
+            {
+                return path;
+            }
+
             String p = prefix;
             if ( !p.startsWith( "/" ) )
             {
