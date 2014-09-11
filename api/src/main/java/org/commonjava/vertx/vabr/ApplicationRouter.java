@@ -13,6 +13,7 @@ package org.commonjava.vertx.vabr;
 import static org.commonjava.vertx.vabr.util.AnnotationUtils.getHandlerKey;
 import static org.commonjava.vertx.vabr.util.RouterUtils.requestUri;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,14 +39,18 @@ import org.commonjava.vertx.vabr.helper.AcceptInfo;
 import org.commonjava.vertx.vabr.helper.ExecutionChainHandler;
 import org.commonjava.vertx.vabr.helper.RequestHandler;
 import org.commonjava.vertx.vabr.helper.RoutingCriteria;
+import org.commonjava.vertx.vabr.types.ApplicationHeader;
 import org.commonjava.vertx.vabr.types.BuiltInParam;
 import org.commonjava.vertx.vabr.types.Method;
+import org.commonjava.vertx.vabr.util.Query;
 import org.commonjava.vertx.vabr.util.RouteHeader;
 import org.commonjava.vertx.vabr.util.RouterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertx.java.core.Handler;
+import org.vertx.java.core.MultiMap;
 import org.vertx.java.core.http.HttpServerRequest;
+import org.vertx.java.core.impl.CaseInsensitiveMultiMap;
 
 public class ApplicationRouter
     implements Handler<HttpServerRequest>
@@ -69,6 +74,8 @@ public class ApplicationRouter
 
     private ExecutorService handlerExecutor;
 
+    private final Map<String, String> routeAliases;
+
     public ApplicationRouter()
     {
         this( new ApplicationRouterConfig() );
@@ -78,6 +85,7 @@ public class ApplicationRouter
     {
         this.prefix = config.getPrefix();
         this.noMatchHandler = config.getNoMatchHandler();
+        this.routeAliases = config.getRouteAliases();
 
         if ( config.getAppAcceptId() != null )
         {
@@ -242,6 +250,23 @@ public class ApplicationRouter
             return false;
         }
 
+        for ( final Map.Entry<String, String> entry : routeAliases.entrySet() )
+        {
+            final String alias = entry.getKey();
+            if ( path.startsWith( alias ) )
+            {
+                final String oldPath = path;
+                path = Paths.get( entry.getValue(), path.substring( alias.length() ) )
+                            .toString();
+
+                logger.info( "ALIAS:\n{}\n\nwill be forwarded to:\n\n{}\n\n", oldPath, path );
+
+                request.response()
+                       .putHeader( ApplicationHeader.deprecated.key(), path );
+                break;
+            }
+        }
+
         final Method method = Method.valueOf( request.method() );
         final RoutingCriteria routingCriteria = RoutingCriteria.parse( request, this.appAcceptId, this.defaultVersion );
 
@@ -287,7 +312,7 @@ public class ApplicationRouter
     {
         final Matcher matcher = ctx.getMatcher();
 
-        final Map<String, String> params = new HashMap<>( matcher.groupCount() );
+        final MultiMap params = new CaseInsensitiveMultiMap();
 
         final String fullPath = request.path();
         final String uri = requestUri( request );
@@ -314,11 +339,11 @@ public class ApplicationRouter
         {
             idx += find.length();
             classBase = fullPath.substring( 0, idx );
-            params.put( BuiltInParam._classBase.key(), classBase );
+            params.add( BuiltInParam._classBase.key(), classBase );
 
             idx = uri.indexOf( find ) + find.length();
             classContext = uri.substring( 0, idx );
-            params.put( BuiltInParam._classContextUrl.key(), classContext );
+            params.add( BuiltInParam._classContextUrl.key(), classContext );
         }
 
         int i = 1;
@@ -334,10 +359,10 @@ public class ApplicationRouter
             }
 
 
-            params.put( BuiltInParam._routeBase.key(), routeBase );
+            params.add( BuiltInParam._routeBase.key(), routeBase );
 
             idx = uri.indexOf( routeBase ) + routeBase.length();
-            params.put( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
+            params.add( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
         }
 
         if ( paramNames != null )
@@ -349,7 +374,7 @@ public class ApplicationRouter
                 if ( v != null )
                 {
                     logger.info( "PARAM {} = {}", param, v );
-                    params.put( param, v );
+                    params.add( param, v );
                 }
                 i++;
             }
@@ -362,31 +387,19 @@ public class ApplicationRouter
             if ( v != null )
             {
                 logger.info( "PARAM param{} = {}", i, v );
-                params.put( "param" + i, v );
+                params.add( "param" + i, v );
             }
         }
 
-        final String query = request.query();
-        if ( query != null )
+        final Query query = Query.from( request );
+        for ( final String name : paramNames )
         {
-            final String[] qe = query.split( "&" );
-            for ( final String entry : qe )
-            {
-                idx = entry.indexOf( '=' );
-                if ( idx > 1 )
-                {
-                    params.put( "q:" + entry.substring( 0, idx ), entry.substring( idx + 1 ) );
-                }
-                else
-                {
-                    params.put( "q:" + entry, "true" );
-                }
-            }
+            params.add( "q:" + name, query.getAll( name ) );
         }
 
         //        logger.info( "PARAMS: {}\n", params );
         request.params()
-               .set( params );
+               .add( params );
     }
 
     protected BindingContext findBinding( final BindingKey key, final String path, final RoutingCriteria routingCriteria )

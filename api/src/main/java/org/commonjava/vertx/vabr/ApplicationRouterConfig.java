@@ -1,8 +1,10 @@
 package org.commonjava.vertx.vabr;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +23,8 @@ public class ApplicationRouterConfig
 
     private Set<RequestHandler> handlers = new HashSet<>();
 
+    private final Map<String, String> routeAliases = new HashMap<>();
+
     private Handler<HttpServerRequest> noMatchHandler;
 
     private String prefix;
@@ -30,6 +34,23 @@ public class ApplicationRouterConfig
     private String defaultVersion = "v1";
 
     private ExecutorService handlerExecutor;
+
+    public Map<String, String> getRouteAliases()
+    {
+        return routeAliases;
+    }
+
+    public ApplicationRouterConfig withRouteAliases( final Map<String, String> routeAliases )
+    {
+        this.routeAliases.putAll( routeAliases );
+        return this;
+    }
+
+    public ApplicationRouterConfig withRouteAlias( final String alias, final String target )
+    {
+        this.routeAliases.put( alias, target );
+        return this;
+    }
 
     public Handler<HttpServerRequest> getNoMatchHandler()
     {

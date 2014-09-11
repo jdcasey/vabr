@@ -111,17 +111,42 @@ public class Respond
 
     public Respond serverError( final Throwable error, final boolean printStackTrace )
     {
+        return serverError( error, null, printStackTrace );
+    }
+
+    public Respond serverError( final Throwable error, final String message, final boolean printStackTrace )
+    {
         this.status = ApplicationStatus.SERVER_ERROR;
         this.contentType = ContentType.text_plain.value();
 
+        final StringBuilder e = new StringBuilder();
+        if ( message != null )
+        {
+            e.append( message )
+             .append( "\n" );
+        }
+
         if ( printStackTrace )
         {
-            this.entity = String.format( "%s:\n  %s", error.getMessage(), join( error.getStackTrace(), "\n  " ) );
+            e.append( error.getMessage() )
+             .append( ":\n  " )
+             .append( join( error.getStackTrace(), "\n  " ) );
         }
         else
         {
-            this.entity = "An internal server error has occurred. Please contact this application's administrator";
+            e.append( "An internal server error has occurred. Please contact this application's administrator" );
         }
+
+        this.entity = e;
+
+        return this;
+    }
+
+    public Respond badRequest( final String reason )
+    {
+        this.status = ApplicationStatus.BAD_REQUEST;
+        this.entity = reason;
+        this.contentType = ContentType.text_plain.value();
 
         return this;
     }
