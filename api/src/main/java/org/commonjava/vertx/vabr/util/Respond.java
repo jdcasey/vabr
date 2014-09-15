@@ -43,8 +43,14 @@ public class Respond
     public Respond jsonEntity( final Object entity )
         throws JsonProcessingException
     {
+        return jsonEntity( entity, new ObjectMapper() );
+    }
+
+    public Respond jsonEntity( final Object entity, final ObjectMapper objectMapper )
+        throws JsonProcessingException
+    {
         this.contentType = ContentType.application_json.value();
-        this.entity = getJson().writeValueAsString( entity );
+        this.entity = objectMapper.writeValueAsString( entity );
 
         return this;
     }
@@ -65,12 +71,6 @@ public class Respond
     {
         this.contentType = type.value();
         return this;
-    }
-
-    // FIXME: Allow configuration.
-    private ObjectMapper getJson()
-    {
-        return new ObjectMapper();
     }
 
     public void send()

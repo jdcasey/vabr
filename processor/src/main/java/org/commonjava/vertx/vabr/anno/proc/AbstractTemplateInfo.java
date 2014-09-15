@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -56,7 +57,14 @@ public abstract class AbstractTemplateInfo
                           .toString();
 
         final TypeElement cls = (TypeElement) eelem.getEnclosingElement();
-        final PackageElement pkg = (PackageElement) cls.getEnclosingElement();
+
+        Element parent = cls.getEnclosingElement();
+        while ( parent.getKind() != ElementKind.PACKAGE )
+        {
+            parent = parent.getEnclosingElement();
+        }
+
+        final PackageElement pkg = (PackageElement) parent;
 
         qualifiedClassname = cls.getQualifiedName()
                                 .toString();
