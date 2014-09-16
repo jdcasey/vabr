@@ -16,22 +16,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Respond
 {
 
-    private final HttpServerResponse response;
-
-    private ApplicationStatus status = ApplicationStatus.BAD_REQUEST;
+    private ApplicationStatus status;
 
     private Object entity;
 
     private String contentType;
 
-    private Respond( final HttpServerResponse response )
+    private final HttpServerRequest request;
+
+    private Respond( final HttpServerRequest request )
     {
-        this.response = response;
+        this.request = request;
     }
 
     public static Respond to( final HttpServerRequest request )
     {
-        return new Respond( request.response() );
+        return new Respond( request );
     }
 
     public Respond ok()
@@ -49,6 +49,11 @@ public class Respond
     public Respond jsonEntity( final Object entity, final ObjectMapper objectMapper )
         throws JsonProcessingException
     {
+        if ( status == null )
+        {
+            status = ApplicationStatus.OK;
+        }
+
         this.contentType = ContentType.application_json.value();
         this.entity = objectMapper.writeValueAsString( entity );
 
@@ -75,6 +80,14 @@ public class Respond
 
     public void send()
     {
+        if ( status == null )
+        {
+            status = ApplicationStatus.BAD_REQUEST;
+        }
+
+        final HttpServerResponse response = request.resume()
+                                                   .response();
+
         response.setStatusCode( status.code() ).setStatusMessage( status.message() );
         String content = null;
         if ( entity != null )
@@ -88,19 +101,24 @@ public class Respond
             content = entity.toString();
         }
 
-        if ( content != null )
+        try
         {
-            response.putHeader( ApplicationHeader.content_length.key(), Integer.toString( content.length() ) );
-
-            if ( contentType != null )
+            if ( content != null )
             {
-                response.putHeader( ApplicationHeader.content_type.key(), contentType );
+                response.putHeader( ApplicationHeader.content_length.key(), Integer.toString( content.length() ) );
+
+                if ( contentType != null )
+                {
+                    response.putHeader( ApplicationHeader.content_type.key(), contentType );
+                }
+
+                response.write( content );
             }
-
-            response.write( content );
         }
-
-        response.end();
+        finally
+        {
+            response.end();
+        }
     }
 
     public Respond status( final ApplicationStatus status )
