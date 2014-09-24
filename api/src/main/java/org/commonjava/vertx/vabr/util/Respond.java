@@ -1,14 +1,21 @@
 package org.commonjava.vertx.vabr.util;
 
 import static org.apache.commons.lang.StringUtils.join;
+import static org.commonjava.vertx.vabr.types.BuiltInParam._classContextUrl;
 
 import java.io.File;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.commonjava.vertx.vabr.types.ApplicationHeader;
 import org.commonjava.vertx.vabr.types.ApplicationStatus;
 import org.commonjava.vertx.vabr.types.ContentType;
+import org.vertx.java.core.MultiMap;
 import org.vertx.java.core.http.HttpServerRequest;
 import org.vertx.java.core.http.HttpServerResponse;
+import org.vertx.java.core.impl.CaseInsensitiveMultiMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +30,8 @@ public class Respond
     private String contentType;
 
     private final HttpServerRequest request;
+
+    private final MultiMap headers = new CaseInsensitiveMultiMap();
 
     private Respond( final HttpServerRequest request )
     {
@@ -103,16 +112,27 @@ public class Respond
 
         try
         {
+            final Set<String> headersWritten = new HashSet<>();
             if ( content != null )
             {
                 response.putHeader( ApplicationHeader.content_length.key(), Integer.toString( content.length() ) );
+                headersWritten.add( ApplicationHeader.content_length.key() );
 
                 if ( contentType != null )
                 {
                     response.putHeader( ApplicationHeader.content_type.key(), contentType );
+                    headersWritten.add( ApplicationHeader.content_type.key() );
                 }
 
                 response.write( content );
+            }
+
+            for ( final String key : headers.names() )
+            {
+                if ( !headersWritten.contains( key ) )
+                {
+                    response.putHeader( key, headers.getAll( key ) );
+                }
             }
         }
         finally
@@ -165,6 +185,37 @@ public class Respond
         this.status = ApplicationStatus.BAD_REQUEST;
         this.entity = reason;
         this.contentType = ContentType.text_plain.value();
+
+        return this;
+    }
+
+    public Respond header( final String key, final String value )
+    {
+        this.headers.add( key, value );
+        return this;
+    }
+
+    public Respond headers( final Map<String, String> headers )
+    {
+        this.headers.add( headers );
+        return this;
+    }
+
+    public Respond created( final String...pathParts )
+    {
+        this.status = ApplicationStatus.CREATED;
+
+        final String baseUri = request.params()
+                        .get( _classContextUrl.key() );
+
+        String location = Paths.get( baseUri, pathParts )
+                               .toString();
+        if ( !location.startsWith( "/" ) )
+        {
+            location = "/" + location;
+        }
+
+        headers.add( ApplicationHeader.location.key(), location );
 
         return this;
     }
