@@ -19,11 +19,13 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpClientResponse;
@@ -100,6 +102,8 @@ public class HttpTestFixture
 
     private final TestHttpServer server;
 
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
+
     public HttpTestFixture( final TemporaryFolder folder )
     {
         this.folder = folder;
@@ -158,7 +162,9 @@ public class HttpTestFixture
     public String get( final String testUrl, final Map<String, String> headers, final int expectedResponse )
         throws Exception
     {
-        final HttpClient http = new DefaultHttpClient();
+        final CloseableHttpClient http = HttpClientBuilder.create()
+                                                 .build();
+
         final HttpGet get = new HttpGet( formatUrl( testUrl ) );
 
         if ( headers != null )
@@ -183,6 +189,17 @@ public class HttpTestFixture
         finally
         {
             IOUtils.closeQuietly( stream );
+            if ( http != null )
+            {
+                try
+                {
+                    http.close();
+                }
+                catch ( final Exception e )
+                {
+                    logger.error( "Error closing http client: " + e.getMessage(), e );
+                }
+            }
         }
 
         //        

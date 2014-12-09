@@ -58,21 +58,28 @@ public final class ${className}
         
         public void dispatch( ApplicationRouter router, HttpServerRequest request )
         {
-            request.pause();
-            
-            ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
-            if ( handler != null )
+            try
             {
-                router.getHandlerExecutor().execute( new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ) );
+                request.pause();
+                
+                ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
+                if ( handler != null )
+                {
+                    router.getHandlerExecutor().execute( new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ) );
+                }
+                else
+                {
+                    String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                    logger.error( message );
+                    request.resume().response().setStatusCode( 500 )
+                                      .setStatusMessage( message )
+                                      .end();
+                } 
             }
-            else
+            catch( Throwable e )
             {
-                String message = "[VABR] Cannot retrieve handler instance for: " + toString();
-                logger.error( message );
-                request.resume().response().setStatusCode( 500 )
-                                  .setStatusMessage( message )
-                                  .end();
-            } 
+                logger.error( e.getMessage(), e );
+            }            
         }
     }
     
@@ -106,9 +113,16 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-                request.resume().response().setStatusCode( 500 )
-                                  .setStatusMessage( "Internal Server Error (" + marker + ")" )
-                                  .end();
+//                try
+//                {
+                    request.resume().response().setStatusCode( 500 )
+                                      .setStatusMessage( "Internal Server Error (" + marker + ")" )
+                                      .end("An unhandled exception has occurred.");
+//                }
+//                catch ( Throwable errorError )
+//                {
+//                    logger.error( errorError.getMessage(), errorError );
+//                }
             }
         }
     }
@@ -129,19 +143,26 @@ public final class ${className}
         
         public synchronized void dispatch( ApplicationRouter router, HttpServerRequest request )
         {
-            request.pause();
-            ${it.qualifiedClassname} target = router.getResourceInstance( ${it.qualifiedClassname}.class );
-            
-            if ( target == null )
+            try
             {
-                String message = "[VABR] Cannot retrieve handler instance for: " + toString();
-                logger.error( message );
-                request.resume().response().setStatusCode( 500 )
-                                  .setStatusMessage( message )
-                                  .end();
-            } 
-            
-            router.getHandlerExecutor().execute( new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ) );
+                request.pause();
+                ${it.qualifiedClassname} target = router.getResourceInstance( ${it.qualifiedClassname}.class );
+                
+                if ( target == null )
+                {
+                    String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                    logger.error( message );
+                    request.resume().response().setStatusCode( 500 )
+                                      .setStatusMessage( message )
+                                      .end();
+                } 
+                
+                router.getHandlerExecutor().execute( new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ) );
+            }
+            catch( Throwable e )
+            {
+                logger.error( e.getMessage(), e );
+            }            
         }
     }
     
@@ -203,9 +224,16 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-                request.resume().response().setStatusCode( 500 )
-                                  .setStatusMessage( "Internal Server Error (" + marker + ")" )
-                                  .end();
+//                try
+//                {
+                    request.resume().response().setStatusCode( 500 )
+                                      .setStatusMessage( "Internal Server Error (" + marker + ")" )
+                                      .end("An unhandled exception has occurred.");
+//                }
+//                catch ( Throwable errorError )
+//                {
+//                    logger.error( errorError.getMessage(), errorError );
+//                }
             }
         }
     }

@@ -31,39 +31,48 @@ public final class ${className}
      %>
         bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}", ${versions} )
         {
+            private final Logger logger = LoggerFactory.getLogger( getClass() );
+
             public void dispatch( ApplicationRouter router, HttpServerRequest request, ExecutionChain chain )
                 throws Exception
             {
-                request.pause();
-                
-                ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
-                if ( handler != null )
+                try
                 {
-                    logger.debug( "Filtering via: " + handler );
-                    try
+                    request.pause();
+                    
+                    ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
+                    if ( handler != null )
                     {
-                        handler.${it.methodname}( request, chain );
+                        logger.debug( "Filtering via: " + handler );
+                        try
+                        {
+                            handler.${it.methodname}( request, chain );
+                        }
+                        catch ( Throwable error )
+                        {
+                            if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
+            
+                            long marker = System.currentTimeMillis();
+                            String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
+                            logger.error( message, error );
+                            request.resume().response().setStatusCode( 500 )
+                                              .setStatusMessage( "Internal Server Error (" + marker + ")" )
+                                              .end();
+                        }
                     }
-                    catch ( Throwable error )
+                    else
                     {
-                        if ( error instanceof InterruptedException ){ Thread.currentThread().interrupt(); }
-        
-                        long marker = System.currentTimeMillis();
-                        String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
-                        logger.error( message, error );
+                        String message = "[VABR] Cannot retrieve handler instance for: " + toString();
+                        logger.error( message );
                         request.resume().response().setStatusCode( 500 )
-                                          .setStatusMessage( "Internal Server Error (" + marker + ")" )
+                                          .setStatusMessage( message )
                                           .end();
-                    }
+                    } 
                 }
-                else
+                catch( Throwable e )
                 {
-                    String message = "[VABR] Cannot retrieve handler instance for: " + toString();
-                    logger.error( message );
-                    request.resume().response().setStatusCode( 500 )
-                                      .setStatusMessage( message )
-                                      .end();
-                } 
+                    logger.error( e.getMessage(), e );
+                }            
             }
         } );
         <% } %>
