@@ -44,11 +44,15 @@ public abstract class AbstractTemplateInfo
 
     private final List<String> versions;
 
+    private final boolean fork;
+
     protected AbstractTemplateInfo( final Element elem, final Handles handles, final int priority, final Method method,
-                                    final String path, final String defPath, final String[] routeVersions )
+                                    final String path, final String defPath, final String[] routeVersions,
+                                    final boolean fork )
     {
         this.priority = priority;
         this.httpMethod = method;
+        this.fork = fork;
         this.httpPath = AnnotationUtils.pathOf( handles, path, defPath );
         // it only applies to methods...
         final ExecutableElement eelem = (ExecutableElement) elem;
@@ -141,6 +145,11 @@ public abstract class AbstractTemplateInfo
     public String getHandlerKey()
     {
         return handlerKey;
+    }
+
+    public boolean isFork()
+    {
+        return fork;
     }
 
 }

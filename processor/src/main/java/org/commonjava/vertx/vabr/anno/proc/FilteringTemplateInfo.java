@@ -21,6 +21,6 @@ public final class FilteringTemplateInfo
 
     public FilteringTemplateInfo( final Element elem, final FilterRoute route, final Handles handles )
     {
-        super( elem, handles, route.priority(), route.method(), route.path(), route.value(), route.versions() );
+        super( elem, handles, route.priority(), route.method(), route.path(), route.value(), route.versions(), false );
     }
 }

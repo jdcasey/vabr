@@ -65,7 +65,11 @@ public final class ${className}
                 ${it.qualifiedClassname} handler = router.getResourceInstance( ${it.qualifiedClassname}.class );
                 if ( handler != null )
                 {
+                    <% if( it.isFork()){ %>
                     router.getHandlerExecutor().execute( new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ) );
+                    <% }else{ %>
+                    new RawRunnable_${it.classname}_${it.methodname}_${it.routeKey}( handler, request ).run();
+                    <%}%>
                 }
                 else
                 {
@@ -113,16 +117,16 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-//                try
-//                {
+                try
+                {
                     request.resume().response().setStatusCode( 500 )
                                       .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                       .end("An unhandled exception has occurred.");
-//                }
-//                catch ( Throwable errorError )
-//                {
-//                    logger.error( errorError.getMessage(), errorError );
-//                }
+                }
+                catch ( Throwable errorError )
+                {
+                    logger.error( errorError.getMessage(), errorError );
+                }
             }
         }
     }
@@ -157,7 +161,11 @@ public final class ${className}
                                       .end();
                 } 
                 
+                <% if( it.isFork()){ %>
                 router.getHandlerExecutor().execute( new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ) );
+                <% }else{ %>
+                new BodyHandler_${it.classname}_${it.methodname}_${it.routeKey}( target, request ).run();
+                <%}%>
             }
             catch( Throwable e )
             {
@@ -224,16 +232,16 @@ public final class ${className}
                 long marker = System.currentTimeMillis();
                 String message = String.format( "(%s) Error executing %s. Reason: %s", marker, this, error.getMessage() );
                 logger.error( message, error );
-//                try
-//                {
+                try
+                {
                     request.resume().response().setStatusCode( 500 )
                                       .setStatusMessage( "Internal Server Error (" + marker + ")" )
                                       .end("An unhandled exception has occurred.");
-//                }
-//                catch ( Throwable errorError )
-//                {
-//                    logger.error( errorError.getMessage(), errorError );
-//                }
+                }
+                catch ( Throwable errorError )
+                {
+                    logger.error( errorError.getMessage(), errorError );
+                }
             }
         }
     }
