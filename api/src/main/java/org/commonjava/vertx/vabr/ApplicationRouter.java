@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.commonjava.vertx.vabr.anno.Handles;
 import org.commonjava.vertx.vabr.bind.BindingContext;
 import org.commonjava.vertx.vabr.bind.BindingKey;
@@ -330,22 +331,6 @@ public class ApplicationRouter
             pathPrefix = pp.prefix();
         }
 
-        final String find = pathPrefix.length() > 0 ? pathPrefix : prefix;
-        int idx = fullPath.indexOf( find );
-
-        String classBase = null;
-        String classContext = null;
-        if ( idx > -1 )
-        {
-            idx += find.length();
-            classBase = fullPath.substring( 0, idx );
-            params.add( BuiltInParam._classBase.key(), classBase );
-
-            idx = uri.indexOf( find ) + find.length();
-            classContext = uri.substring( 0, idx );
-            params.add( BuiltInParam._classContextUrl.key(), classContext );
-        }
-
         int i = 1;
 
         if ( matcher.groupCount() > 0 )
@@ -358,12 +343,46 @@ public class ApplicationRouter
                 routeBase = routeBase.substring( 0, routeBase.length() - 1 );
             }
 
-
             params.add( BuiltInParam._routeBase.key(), routeBase );
 
-            idx = uri.indexOf( routeBase ) + routeBase.length();
-            params.add( BuiltInParam._routeContextUrl.key(), uri.substring( 0, idx ) );
+            int idx = uri.indexOf( routeBase ) + routeBase.length();
+            final String routeContextUrl = uri.substring( 0, idx );
+            params.add( BuiltInParam._routeContextUrl.key(), routeContextUrl );
+
+            idx = fullPath.indexOf( routeBase );
+
+            String classBase = null;
+            String classContext = null;
+            if ( idx > -1 )
+            {
+                idx += routeBase.length();
+                classBase = fullPath.substring( 0, idx );
+                params.add( BuiltInParam._classBase.key(), classBase );
+
+                idx = uri.indexOf( routeBase ) + routeBase.length();
+                classContext = uri.substring( 0, idx );
+                params.add( BuiltInParam._classContextUrl.key(), classContext );
+            }
         }
+        else
+        {
+            final String find = pathPrefix.length() > 0 ? pathPrefix : prefix;
+            int idx = fullPath.indexOf( find );
+
+            String classBase = null;
+            String classContext = null;
+            if ( idx > -1 )
+            {
+                idx += find.length();
+                classBase = fullPath.substring( 0, idx );
+                params.add( BuiltInParam._classBase.key(), classBase );
+
+                idx = uri.indexOf( find ) + find.length();
+                classContext = uri.substring( 0, idx );
+                params.add( BuiltInParam._classContextUrl.key(), classContext );
+            }
+        }
+
 
         if ( paramNames != null )
         {
@@ -421,8 +440,17 @@ public class ApplicationRouter
             }
         }
 
+        logger.debug( "Searching for bindings matching key: {}", key );
         final List<PatternRouteBinding> routeBindings = this.routeBindings.get( key );
-        //        logger.info( "Available bindings:\n  {}\n", join( bindings, "\n  " ) );
+        logger.debug( "Available bindings:\n  {}\n", new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return StringUtils.join( routeBindings, "\n  " );
+            }
+        } );
+
         if ( routeBindings != null )
         {
             for ( final PatternRouteBinding binding : routeBindings )

@@ -11,7 +11,18 @@ public class RedirectHandler
 
     public RedirectHandler( final String to )
     {
-        this.to = to.endsWith( "/" ) ? to : to + "/";
+        if ( to == null )
+        {
+            this.to = "/";
+        }
+        else if ( to.endsWith( "/" ) )
+        {
+            this.to = to;
+        }
+        else
+        {
+            this.to = to + "/";
+        }
     }
 
     @Override

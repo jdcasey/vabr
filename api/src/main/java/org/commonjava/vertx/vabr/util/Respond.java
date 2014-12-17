@@ -1,17 +1,18 @@
 package org.commonjava.vertx.vabr.util;
 
 import static org.apache.commons.lang.StringUtils.join;
-import static org.commonjava.vertx.vabr.types.BuiltInParam._classContextUrl;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.commonjava.vertx.vabr.types.ApplicationHeader;
 import org.commonjava.vertx.vabr.types.ApplicationStatus;
 import org.commonjava.vertx.vabr.types.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.MultiMap;
 import org.vertx.java.core.http.HttpServerRequest;
 import org.vertx.java.core.http.HttpServerResponse;
@@ -22,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Respond
 {
+
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private ApplicationStatus status;
 
@@ -123,16 +126,20 @@ public class Respond
                     response.putHeader( ApplicationHeader.content_type.key(), contentType );
                     headersWritten.add( ApplicationHeader.content_type.key() );
                 }
-
-                response.write( content );
             }
 
             for ( final String key : headers.names() )
             {
                 if ( !headersWritten.contains( key ) )
                 {
+                    logger.debug( "Writing headers: {} = {}", key, headers.getAll( key ) );
                     response.putHeader( key, headers.getAll( key ) );
                 }
+            }
+
+            if ( content != null )
+            {
+                response.write( content );
             }
         }
         finally
@@ -205,18 +212,38 @@ public class Respond
     {
         this.status = ApplicationStatus.CREATED;
 
-        final String baseUri = request.params()
-                        .get( _classContextUrl.key() );
-
-        String location = Paths.get( baseUri, pathParts )
-                               .toString();
-        if ( !location.startsWith( "/" ) )
+        logger.debug( "Creating Location header with pathParts: {}", new Object()
         {
-            location = "/" + location;
-        }
+            @Override
+            public String toString()
+            {
+                return StringUtils.join( pathParts, ", " );
+            }
+        } );
+
+        final String location = UrlUtils.buildUrl( pathParts );
+        logger.debug( "Location: {}", location );
 
         headers.add( ApplicationHeader.location.key(), location );
 
+        return this;
+    }
+
+    public Respond notFound()
+    {
+        this.status = ApplicationStatus.NOT_FOUND;
+        return this;
+    }
+
+    public Respond deleted()
+    {
+        this.status = ApplicationStatus.NO_CONTENT;
+        return this;
+    }
+
+    public Respond notModified()
+    {
+        this.status = ApplicationStatus.NOT_MODIFIED;
         return this;
     }
 
