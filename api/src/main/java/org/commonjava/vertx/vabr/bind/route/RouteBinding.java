@@ -27,11 +27,13 @@ public abstract class RouteBinding
 
     private final String handlesMethodName;
 
-    protected RouteBinding( final int priority, final String path, final Method method, final String contentType,
+    protected RouteBinding( final int priority, final String path, final String routeSubPath,
+                            final String handlerSubPath, final Method method,
+                            final String contentType,
                             final String handlerKey, final Class<?> handlesClass, final String handlesMethodName,
                             final List<String> versions )
     {
-        super( priority, path, method, handlerKey, versions );
+        super( priority, path, routeSubPath, handlerSubPath, method, handlerKey, versions );
         this.handlesClass = handlesClass;
         this.handlesMethodName = handlesMethodName;
         this.contentType = contentType.length() < 1 ? null : contentType;

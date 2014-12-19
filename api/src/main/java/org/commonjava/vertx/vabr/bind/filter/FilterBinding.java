@@ -22,10 +22,12 @@ public abstract class FilterBinding
     implements Comparable<FilterBinding>
 {
 
-    protected FilterBinding( final int priority, final String path, final Method method, final String handlerKey,
+    protected FilterBinding( final int priority, final String path, final String routeSubPath,
+                             final String handlerSubPath, final Method method,
+                             final String handlerKey,
                              final List<String> versions )
     {
-        super( priority, path, method, handlerKey, versions );
+        super( priority, path, routeSubPath, handlerSubPath, method, handlerKey, versions );
     }
 
     @Override

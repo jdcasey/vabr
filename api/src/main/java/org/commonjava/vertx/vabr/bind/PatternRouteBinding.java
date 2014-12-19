@@ -28,14 +28,36 @@ public class PatternRouteBinding
 
     private final List<String> paramNames;
 
-    public PatternRouteBinding( final String pattern, final List<String> paramNames, final RouteBinding handler )
+    private final String classBasePattern;
+
+    public PatternRouteBinding( final String pattern, final String classBasePattern, final List<String> paramNames,
+                                final RouteBinding handler )
     {
         this.pattern = pattern;
+        this.classBasePattern = classBasePattern;
         this.paramNames = paramNames;
         this.handler = handler;
     }
 
-    public static PatternRouteBinding parse( String route, RouteBinding handler )
+    public static PatternRouteBinding parse( final RouteBinding handler )
+    {
+        final String route = handler.getPath();
+
+        final List<String> groups = new ArrayList<>();
+        final String regex = parsePath( route, groups );
+
+        // classContextUrl == URL up to but not including handlerPath
+        // classBaseUrl == URL up to and including handlerPath (with any actual parameter values included)
+        // routeContextUrl == classBaseUrl
+        // routeUrl == full regex parsed from handler.getPath()
+        final String classBaseRegex =
+            parsePath( String.format( "((.+)(%s))%s", handler.getHandlerPathFragment(), handler.getRoutePathFragment() ),
+                       null );
+
+        return new PatternRouteBinding( regex, classBaseRegex, groups, handler );
+    }
+
+    private static String parsePath( final String route, final List<String> groups )
     {
         // input is /:name/:path=(.+)/:page
         // route pattern is: /([^\\/]+)/(.+)/([^\\/]+)
@@ -44,9 +66,8 @@ public class PatternRouteBinding
         // We need to search for any :<token name> tokens in the String and replace them with named capture groups
         final Matcher m = Pattern.compile( ":(\\??[A-Za-z][A-Za-z0-9_]*)(=\\([^)]+\\))?" )
                                  .matcher( route );
-
+        
         final StringBuffer sb = new StringBuffer();
-        final List<String> groups = new ArrayList<>();
         while ( m.find() )
         {
             String group = m.group( 1 );
@@ -72,20 +93,24 @@ public class PatternRouteBinding
                 pattern += "?";
             }
 
-            if ( groups.contains( group ) )
+            if ( groups != null )
             {
-                throw new IllegalArgumentException( "Cannot use identifier " + group
-                    + " more than once in pattern string" );
+                if ( groups.contains( group ) )
+                {
+                    throw new IllegalArgumentException( "Cannot use identifier " + group
+                        + " more than once in pattern string" );
+                }
+
+                groups.add( group );
             }
 
             m.appendReplacement( sb, pattern );
 
-            groups.add( group );
         }
-        m.appendTail( sb );
-        final String regex = sb.toString();
 
-        return new PatternRouteBinding( regex, groups, handler );
+        m.appendTail( sb );
+
+        return sb.toString();
     }
 
     @Override
@@ -104,6 +129,11 @@ public class PatternRouteBinding
     public String getPattern()
     {
         return pattern;
+    }
+
+    public String getClassBasePattern()
+    {
+        return classBasePattern;
     }
 
     public RouteBinding getHandler()

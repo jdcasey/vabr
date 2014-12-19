@@ -10,6 +10,8 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr.anno.proc;
 
+import static org.apache.commons.lang.StringUtils.isEmpty;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +48,10 @@ public abstract class AbstractTemplateInfo
 
     private final boolean fork;
 
+    private final String routePathFragment;
+
+    private final String handlerPathFragment;
+
     protected AbstractTemplateInfo( final Element elem, final Handles handles, final int priority, final Method method,
                                     final String path, final String defPath, final String[] routeVersions,
                                     final boolean fork )
@@ -54,6 +60,9 @@ public abstract class AbstractTemplateInfo
         this.httpMethod = method;
         this.fork = fork;
         this.httpPath = AnnotationUtils.pathOf( handles, path, defPath );
+        this.routePathFragment = isEmpty( path ) ? defPath : path;
+        this.handlerPathFragment = isEmpty( handles.prefix() ) ? handles.value() : handles.prefix();
+
         // it only applies to methods...
         final ExecutableElement eelem = (ExecutableElement) elem;
 
@@ -135,6 +144,16 @@ public abstract class AbstractTemplateInfo
     public String getHttpPath()
     {
         return httpPath;
+    }
+
+    public String getRoutePathFragment()
+    {
+        return routePathFragment;
+    }
+
+    public String getHandlerPathFragment()
+    {
+        return handlerPathFragment;
     }
 
     public int getPriority()

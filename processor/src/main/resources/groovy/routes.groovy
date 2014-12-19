@@ -53,7 +53,7 @@ public final class ${className}
 
         public RawBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
-            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
+            super( ${it.priority}, "${it.httpPath}", "${it.routePathFragment}", "${it.handlerPathFragment}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
         }
         
         public void dispatch( ApplicationRouter router, HttpServerRequest request )
@@ -142,7 +142,7 @@ public final class ${className}
     
         public BodyBinding_${it.classname}_${it.methodname}_${it.routeKey}()
         {
-            super( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
+            super( ${it.priority}, "${it.httpPath}", "${it.routePathFragment}", "${it.handlerPathFragment}", Method.${it.httpMethod}, "${it.httpContentType}", "${it.handlerKey}", ${it.qualifiedClassname}.class, "${it.methodname}", ${versions} );
         }
         
         public synchronized void dispatch( ApplicationRouter router, HttpServerRequest request )

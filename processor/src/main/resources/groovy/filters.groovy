@@ -29,7 +29,7 @@ public final class ${className}
     {<% templates.each {
           def versions = "new ArrayList<String>(Arrays.<String>asList(" + it.getVersions().collect({v -> "\"" + v + "\""}).join(", ") + "))"
      %>
-        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", Method.${it.httpMethod}, "${it.handlerKey}", ${versions} )
+        bind( new FilterBinding( ${it.priority}, "${it.httpPath}", "${it.routePathFragment}", "${it.handlerPathFragment}", Method.${it.httpMethod}, "${it.handlerKey}", ${versions} )
         {
             private final Logger logger = LoggerFactory.getLogger( getClass() );
 

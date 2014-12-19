@@ -79,7 +79,10 @@ public class ApplicationRouterTest
     public void builtInParams_PrefixedPathWithParamsRightAfterPrefix()
         throws Exception
     {
-        final MultiMap params = getParams( "/api", "/:type/:name:path=(/.*)", "/api/remote/foo/" );
+        final String path = "/:type/:name:path=(/.*)";
+        final String routePath = path;
+        final String handlerPath = "";
+        final MultiMap params = getParams( "/api", path, routePath, handlerPath, "/api/remote/foo/" );
 
         final String basePath = "/api";
         final String baseUrl = "http://" + host + ":" + port + basePath;
@@ -92,7 +95,8 @@ public class ApplicationRouterTest
         assertThat( params.get( "path" ), equalTo( "/" ) );
     }
 
-    private MultiMap getParams( final String prefix, final String bindingPath, final String requestPath )
+    private MultiMap getParams( final String prefix, final String bindingPath, final String routePath,
+                                final String handlerPath, final String requestPath )
         throws Exception
     {
         access = new ParamAccess();
@@ -104,6 +108,8 @@ public class ApplicationRouterTest
                                                                                       .withHandler( access )
                                                                                       .withRouteCollection( new ParamCollection(
                                                                                                                                  bindingPath,
+                                                                                                                                 routePath,
+                                                                                                                                 handlerPath,
                                                                                                                                  access ) ) ) )
                  .listen( port, host );
 
@@ -125,9 +131,10 @@ public class ApplicationRouterTest
 
         private final ParamRouteBinding binding;
 
-        public ParamCollection( final String path, final ParamAccess access )
+        public ParamCollection( final String path, final String routePath, final String handlerPath,
+                                final ParamAccess access )
         {
-            binding = new ParamRouteBinding( path, access );
+            binding = new ParamRouteBinding( path, routePath, handlerPath, access );
         }
 
         @Override
@@ -150,9 +157,10 @@ public class ApplicationRouterTest
     {
         private final ParamAccess access;
 
-        public ParamRouteBinding( final String path, final ParamAccess access )
+        public ParamRouteBinding( final String path, final String routePath, final String handlerPath,
+                                  final ParamAccess access )
         {
-            super( 1, path, Method.GET, "application/foo", "key", ParamAccess.class, "handle",
+            super( 1, path, routePath, handlerPath, Method.GET, "application/foo", "key", ParamAccess.class, "handle",
                    Collections.singletonList( "v1" ) );
             this.access = access;
         }

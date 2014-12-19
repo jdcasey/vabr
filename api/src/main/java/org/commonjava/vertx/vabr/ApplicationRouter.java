@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr;
 
+import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.commonjava.vertx.vabr.util.AnnotationUtils.getHandlerKey;
 import static org.commonjava.vertx.vabr.util.RouterUtils.requestUri;
 
@@ -322,15 +323,6 @@ public class ApplicationRouter
         final List<String> paramNames = routeBinding.getParamNames();
         final RouteBinding handler = routeBinding.getHandler();
 
-        final Handles pp = handler.getHandlesClass()
-                                  .getAnnotation( Handles.class );
-
-        String pathPrefix = pp.value();
-        if ( pathPrefix.length() < 1 )
-        {
-            pathPrefix = pp.prefix();
-        }
-
         int i = 1;
 
         if ( matcher.groupCount() > 0 )
@@ -366,6 +358,15 @@ public class ApplicationRouter
         }
         else
         {
+            final Class<?> handlerCls = handler.getHandlesClass();
+            final Handles handles = handlerCls.getAnnotation( Handles.class );
+
+            String pathPrefix = handles.value();
+            if ( isEmpty( pathPrefix ) )
+            {
+                pathPrefix = handles.prefix();
+            }
+
             final String find = pathPrefix.length() > 0 ? pathPrefix : prefix;
             int idx = fullPath.indexOf( find );
 
@@ -500,7 +501,6 @@ public class ApplicationRouter
     public void bind( final RouteBinding handler )
     {
         final Method method = handler.getMethod();
-        final String path = handler.getPath();
 
         logger.info( "Using appId: {} and default version: {}", appAcceptId, defaultVersion );
         List<String> versions = handler.getVersions();
@@ -534,8 +534,8 @@ public class ApplicationRouter
                     routeBindings.put( key, b );
                 }
 
-                logger.info( "ADD: {}, Pattern: {}, Route: {}\n", key, path, handler );
-                addPattern( path, handler, b );
+                logger.info( "ADD: {}, Pattern: {}, Route: {}\n", key, handler.getPath(), handler );
+                addPattern( handler, b );
             }
         }
     }
@@ -616,10 +616,10 @@ public class ApplicationRouter
         noMatchHandler = handler;
     }
 
-    protected void addPattern( final String input, final RouteBinding handler, final List<PatternRouteBinding> bindings )
+    protected void addPattern( final RouteBinding handler, final List<PatternRouteBinding> bindings )
     {
         //        logger.info( "BIND regex: {}, groups: {}, route: {}\n", regex, groups, handler );
-        final PatternRouteBinding binding = PatternRouteBinding.parse( input, handler );
+        final PatternRouteBinding binding = PatternRouteBinding.parse( handler );
         bindings.add( binding );
 
         Collections.sort( bindings );

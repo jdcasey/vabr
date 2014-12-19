@@ -9,6 +9,10 @@ public abstract class AbstractBinding
 {
     protected final String path;
 
+    protected final String routePathFragment;
+
+    private final String handlerPathFragment;
+
     protected final Method method;
 
     protected final int priority;
@@ -17,11 +21,15 @@ public abstract class AbstractBinding
 
     protected final List<String> versions;
 
-    protected AbstractBinding( final int priority, final String path, final Method method, final String handlerKey,
+    protected AbstractBinding( final int priority, final String path, final String routePathFragment,
+                               final String handlerPathFragment, final Method method,
+                               final String handlerKey,
                                final List<String> versions )
     {
         this.priority = priority;
         this.path = path;
+        this.routePathFragment = routePathFragment;
+        this.handlerPathFragment = handlerPathFragment;
         this.method = method;
         this.handlerKey = handlerKey;
         this.versions = Collections.unmodifiableList( versions );
@@ -40,6 +48,16 @@ public abstract class AbstractBinding
     public final String getPath()
     {
         return path;
+    }
+
+    public final String getHandlerPathFragment()
+    {
+        return handlerPathFragment;
+    }
+
+    public final String getRoutePathFragment()
+    {
+        return routePathFragment;
     }
 
     public final Method getMethod()
