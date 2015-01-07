@@ -19,7 +19,7 @@
 
   <groupId>org.commonjava.vertx</groupId>
   <artifactId>vabr</artifactId>
-  <version>1.12</version>
+  <version>1.13-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Vert.x Annotation-Based Routing :: Parent</name>
@@ -45,13 +45,13 @@
       <dependency>
         <groupId>org.commonjava.vertx</groupId>
         <artifactId>vabr-api</artifactId>
-        <version>1.12</version>
+        <version>1.13-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.commonjava.vertx</groupId>
         <artifactId>vabr-processor</artifactId>
-        <version>1.12</version>
+        <version>1.13-SNAPSHOT</version>
       </dependency>
       
       <dependency>
