@@ -460,6 +460,8 @@ public class ApplicationRouter
                                          .matcher( path );
                 if ( m.matches() )
                 {
+                    logger.debug( "Route pattern: {} matches: {}", binding.getPattern(), path );
+
                     final String produces = binding.getHandler()
                                                    .getContentType();
 
@@ -467,12 +469,15 @@ public class ApplicationRouter
                     {
                         for ( final AcceptInfo info : routingCriteria )
                         {
+                            logger.debug( "Checking produces: {} vs accept header: {}", produces, info.getBaseAccept() );
+
                             if ( info.getBaseAccept()
                                      .equals( RoutingCriteria.ACCEPT_ANY ) || info.getBaseAccept()
                                                                                   .equals( produces.toLowerCase() )
                                 || info.getRawAccept()
                                        .equals( produces.toLowerCase() ) )
                             {
+                                logger.debug( "Using binding: {}", binding );
                                 return new BindingContext( m, binding, filterBinding );
                             }
                             else
@@ -484,12 +489,19 @@ public class ApplicationRouter
                     }
                     else
                     {
+                        logger.debug( "No produces; Using binding: {}", binding );
                         return new BindingContext( m, binding, filterBinding );
                     }
+                }
+                else
+                {
+                    logger.debug( "Route pattern: {} did NOT match: {}", binding.getPattern(), path );
                 }
             }
         }
 
+        logger.debug( "No matching route bindings. Aborting request handling in: {}", this.getClass()
+                                                                                          .getSimpleName() );
         return null;
     }
 
