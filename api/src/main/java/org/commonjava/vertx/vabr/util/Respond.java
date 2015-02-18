@@ -14,6 +14,7 @@ import org.commonjava.vertx.vabr.types.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertx.java.core.MultiMap;
+import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpServerRequest;
 import org.vertx.java.core.http.HttpServerResponse;
 import org.vertx.java.core.impl.CaseInsensitiveMultiMap;
@@ -100,29 +101,37 @@ public class Respond
         final HttpServerResponse response = request.resume()
                                                    .response();
 
+        logger.debug( "Sending {} {}", status.code(), status.message() );
         response.setStatusCode( status.code() ).setStatusMessage( status.message() );
-        String content = null;
+
+        Long contentLength = null;
         if ( entity != null )
         {
             if ( entity instanceof File )
             {
-                response.sendFile( ( (File) entity ).getAbsolutePath() );
-                return;
+                contentLength = ( (File) entity ).length();
+            }
+            else if ( entity instanceof Buffer )
+            {
+                contentLength = (long) ( (Buffer) entity ).length();
             }
 
-            content = entity.toString();
+            contentLength = (long) entity.toString()
+                                         .length();
         }
 
         try
         {
             final Set<String> headersWritten = new HashSet<>();
-            if ( content != null )
+            if ( entity != null )
             {
-                response.putHeader( ApplicationHeader.content_length.key(), Integer.toString( content.length() ) );
+                logger.debug( "Writing calculated content-length header" );
+                response.putHeader( ApplicationHeader.content_length.key(), contentLength.toString() );
                 headersWritten.add( ApplicationHeader.content_length.key() );
 
                 if ( contentType != null )
                 {
+                    logger.debug( "Writing content-type header" );
                     response.putHeader( ApplicationHeader.content_type.key(), contentType );
                     headersWritten.add( ApplicationHeader.content_type.key() );
                 }
@@ -132,18 +141,43 @@ public class Respond
             {
                 if ( !headersWritten.contains( key ) )
                 {
-                    logger.debug( "Writing headers: {} = {}", key, headers.getAll( key ) );
+                    logger.debug( "Writing headers from multi-map: {} = {}", key, headers.getAll( key ) );
                     response.putHeader( key, headers.getAll( key ) );
+                    headersWritten.add( key );
                 }
             }
 
-            if ( content != null )
+            if ( headersWritten.isEmpty() )
             {
-                response.write( content );
+                response.putHeader( "FOO", "BAR" );
+            }
+
+            if ( entity != null )
+            {
+                if ( entity instanceof File )
+                {
+                    logger.debug( "Writing file entity" );
+                    response.sendFile( ( (File) entity ).getAbsolutePath() );
+                }
+                else if ( entity instanceof Buffer )
+                {
+                    logger.debug( "Writing buffer entity" );
+                    response.write( ( (Buffer) entity ) );
+                }
+                else
+                {
+                    logger.debug( "Writing string entity" );
+                    response.write( entity.toString() );
+                }
+            }
+            else
+            {
+                logger.debug( "No entity" );
             }
         }
         finally
         {
+            logger.debug( "Ending response" );
             response.end();
         }
     }
@@ -244,6 +278,12 @@ public class Respond
     public Respond notModified()
     {
         this.status = ApplicationStatus.NOT_MODIFIED;
+        return this;
+    }
+
+    public Respond noContent()
+    {
+        this.status = ApplicationStatus.NO_CONTENT;
         return this;
     }
 

@@ -10,26 +10,28 @@
  ******************************************************************************/
 package org.commonjava.vertx.vabr.helper;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
 import org.commonjava.vertx.vabr.ApplicationRouter;
+import org.commonjava.vertx.vabr.bind.AbstractBinding;
 import org.commonjava.vertx.vabr.bind.BindingContext;
 import org.commonjava.vertx.vabr.bind.filter.ExecutionChain;
 import org.commonjava.vertx.vabr.bind.filter.FilterBinding;
 import org.commonjava.vertx.vabr.bind.route.RouteBinding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertx.java.core.http.HttpServerRequest;
 
 public class ExecutionChainHandler
 {
 
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
+
     private final ApplicationRouter router;
 
-    private List<FilterBinding> filters;
+    private LinkedList<FilterBinding> filters;
 
     private RouteBinding route;
-
-    private final List<ExecutionChain> chains = new ArrayList<>();
 
     private final HttpServerRequest request;
 
@@ -39,8 +41,8 @@ public class ExecutionChainHandler
         this.request = request;
         if ( ctx.getPatternFilterBinding() != null )
         {
-            filters = ctx.getPatternFilterBinding()
-                         .getFilters();
+            filters = new LinkedList<>( ctx.getPatternFilterBinding()
+                                           .getFilters() );
         }
 
         if ( ctx.getPatternRouteBinding() != null )
@@ -53,20 +55,9 @@ public class ExecutionChainHandler
     public void execute()
         throws Exception
     {
-        int i = 0;
         if ( filters != null )
         {
-            for ( ; i < filters.size(); i++ )
-            {
-                // one for each filter.
-                chains.add( new ExecutionChainImpl( i ) );
-            }
-
-            // for base route binding.
-            chains.add( new ExecutionChainImpl( i ) );
-
-            chains.get( 0 )
-                  .handle();
+            new ExecutionChainImpl().handle();
         }
         else
         {
@@ -77,27 +68,50 @@ public class ExecutionChainHandler
     public final class ExecutionChainImpl
         implements ExecutionChain
     {
-        private final int currentFilterIndex;
+        private AbstractBinding binding;
 
-        private ExecutionChainImpl( final int idx )
+        private ExecutionChainImpl()
         {
-            this.currentFilterIndex = idx;
+        }
+
+        public boolean isHandled()
+        {
+            return binding != null;
         }
 
         @Override
         public void handle()
             throws Exception
         {
-            if ( filters == null || currentFilterIndex >= filters.size() )
+            if ( binding != null )
             {
+                logger.info( "ExecutionChain already called for: {}. Returning.", binding );
+                return;
+            }
+
+            if ( filters == null || filters.isEmpty() )
+            {
+                logger.info( "ExecutionChain triggering route: {}", route );
+                binding = route;
+
                 route.handle( router, request );
+                logger.info( "Router execution done" );
             }
             else
             {
-                final FilterBinding filter = filters.get( currentFilterIndex );
-                final ExecutionChain next = chains.get( currentFilterIndex + 1 );
+                final FilterBinding filter = filters.removeFirst();
+                binding = filter;
 
+                logger.info( "ExecutionChain triggering filter: {}", filter );
+                final ExecutionChainImpl next = new ExecutionChainImpl();
                 filter.handle( router, request, next );
+
+                if ( !next.isHandled() )
+                {
+                    logger.info( "Next in chain not triggered by filter. Triggering now." );
+                    next.handle();
+                }
+                logger.info( "Filter execution done" );
             }
         }
 

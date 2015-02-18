@@ -41,7 +41,8 @@ public final class RoutingTemplateInfo
         super( elem, handles, route.priority(), route.method(), route.path(), route.value(), route.versions(),
                route.fork() );
         this.httpContentType = route.contentType();
-        this.binding = route.binding();
+
+        BindingType binding = route.binding();
         this.routeKey = route.routeKey();
 
         if ( binding == BindingType.raw )
@@ -62,13 +63,21 @@ public final class RoutingTemplateInfo
                 if ( typeStr.equals( Buffer.class.getName() ) )
                 {
                     callParams.add( "body" );
+                    binding = BindingType.body_handler;
                 }
                 else if ( typeStr.equals( HttpServerRequest.class.getName() ) )
                 {
                     callParams.add( "request" );
                 }
             }
+
+            if ( binding == BindingType.detect )
+            {
+                binding = BindingType.raw;
+            }
         }
+
+        this.binding = binding;
     }
 
     public List<String> getCallParams()

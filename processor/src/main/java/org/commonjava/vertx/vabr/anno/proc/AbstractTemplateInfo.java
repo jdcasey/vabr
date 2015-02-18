@@ -46,7 +46,7 @@ public abstract class AbstractTemplateInfo
 
     private final List<String> versions;
 
-    private final boolean fork;
+    private boolean fork;
 
     private final String routePathFragment;
 
@@ -164,6 +164,11 @@ public abstract class AbstractTemplateInfo
     public String getHandlerKey()
     {
         return handlerKey;
+    }
+
+    public void setFork( final boolean fork )
+    {
+        this.fork = fork;
     }
 
     public boolean isFork()

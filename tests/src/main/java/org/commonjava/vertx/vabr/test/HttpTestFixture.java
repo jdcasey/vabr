@@ -166,22 +166,22 @@ public class HttpTestFixture
                                                  .build();
 
         final HttpGet get = new HttpGet( formatUrl( testUrl ) );
-
-        if ( headers != null )
-        {
-            for ( final String key : headers.keySet() )
-            {
-                get.setHeader( key, headers.get( key ) );
-            }
-        }
-
-        final HttpResponse response = http.execute( get );
-        assertThat( response.getStatusLine()
-                            .getStatusCode(), equalTo( expectedResponse ) );
-
         InputStream stream = null;
+
         try
         {
+            if ( headers != null )
+            {
+                for ( final String key : headers.keySet() )
+                {
+                    get.setHeader( key, headers.get( key ) );
+                }
+            }
+
+            final HttpResponse response = http.execute( get );
+            assertThat( response.getStatusLine()
+                                .getStatusCode(), equalTo( expectedResponse ) );
+
             stream = response.getEntity()
                              .getContent();
             return IOUtils.toString( stream );
@@ -189,6 +189,7 @@ public class HttpTestFixture
         finally
         {
             IOUtils.closeQuietly( stream );
+            get.reset();
             if ( http != null )
             {
                 try

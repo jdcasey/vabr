@@ -35,7 +35,7 @@ public @interface Route
 
     String contentType() default "";
 
-    BindingType binding() default BindingType.body_handler;
+    BindingType binding() default BindingType.detect;
 
     boolean fork() default true;
 
